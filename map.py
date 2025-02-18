@@ -1,4 +1,5 @@
 import random
+import time
 
 def create_empty_map(size):
     return [[1 for _ in range(size)] for _ in range(size)]
@@ -9,7 +10,7 @@ def carve_room(grid, x, y, width, height):
             grid[i][j] = 0
 
 def carve_hallway(grid, x1, y1, x2, y2):
-    if random.choice([True, False]):
+    if random.choice([True, True, False]):
         for x in range(min(x1, x2), max(x1, x2) + 1):
             grid[y1][x] = 0
             if y1 + 1 < len(grid):
@@ -32,7 +33,7 @@ def generate_map(size):
     grid = create_empty_map(size)
     rooms = []
     
-    for _ in range(random.randint(6, 10)):
+    for _ in range(random.randint(10, 16)):
         w, h = random.randint(5, 10), random.randint(5, 10)
         x, y = random.randint(1, size - w - 1), random.randint(1, size - h - 1)
         carve_room(grid, x, y, w, h)
@@ -51,6 +52,8 @@ def get_map_data(grid):
     return grid
 
 if __name__ == "__main__":
-    game_map = generate_map(51)
-    print_map(game_map)
-    map_data = get_map_data(game_map)
+    while True:
+        game_map = generate_map(51)
+        time.sleep(0.5)
+        print_map(game_map)
+        map_data = get_map_data(game_map)
