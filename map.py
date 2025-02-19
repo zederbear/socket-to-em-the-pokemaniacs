@@ -11,24 +11,27 @@ def carve_room(grid, x, y, width, height):
             grid[i][j] = 0
 
 def carve_hallway(grid, x1, y1, x2, y2):
+    hallway_width = 3  # Adjust width of hallways
+    
     if random.choice([True, True, False]):
         for x in range(min(x1, x2), max(x1, x2) + 1):
-            grid[y1][x] = 0
-            if y1 + 1 < len(grid):
-                grid[y1 + 1][x] = 0
+            for i in range(hallway_width):
+                if y1 + i < len(grid):
+                    grid[y1 + i][x] = 0
         for y in range(min(y1, y2), max(y1, y2) + 1):
-            grid[y][x2] = 0
-            if x2 + 1 < len(grid[0]):
-                grid[y][x2 + 1] = 0
+            for i in range(hallway_width):
+                if x2 + i < len(grid[0]):
+                    grid[y][x2 + i] = 0
     else:
         for y in range(min(y1, y2), max(y1, y2) + 1):
-            grid[y][x1] = 0
-            if x1 + 1 < len(grid[0]):
-                grid[y][x1 + 1] = 0
+            for i in range(hallway_width):
+                if x1 + i < len(grid[0]):
+                    grid[y][x1 + i] = 0
         for x in range(min(x1, x2), max(x1, x2) + 1):
-            grid[y2][x] = 0
-            if y2 + 1 < len(grid):
-                grid[y2 + 1][x] = 0
+            for i in range(hallway_width):
+                if y2 + i < len(grid):
+                    grid[y2 + i][x] = 0
+
 
 def generate_map(size):
     grid = create_empty_map(size)
