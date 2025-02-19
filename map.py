@@ -5,7 +5,36 @@ import pygame
 def create_empty_map(size):
     return [[1 for _ in range(size)] for _ in range(size)]
 
-def create_rooms(size, room_count, min_size, max_size):
+def carve_room(grid, x, y, width, height):
+    for i in range(y, y + height):
+        for j in range(x, x + width):
+            grid[i][j] = 0
+
+def carve_hallway(grid, x1, y1, x2, y2):
+    hallway_width = 3  # Adjust width of hallways
+    
+    if random.choice([True, True, False]):
+        for x in range(min(x1, x2), max(x1, x2) + 1):
+            for i in range(hallway_width):
+                if y1 + i < len(grid):
+                    grid[y1 + i][x] = 0
+        for y in range(min(y1, y2), max(y1, y2) + 1):
+            for i in range(hallway_width):
+                if x2 + i < len(grid[0]):
+                    grid[y][x2 + i] = 0
+    else:
+        for y in range(min(y1, y2), max(y1, y2) + 1):
+            for i in range(hallway_width):
+                if x1 + i < len(grid[0]):
+                    grid[y][x1 + i] = 0
+        for x in range(min(x1, x2), max(x1, x2) + 1):
+            for i in range(hallway_width):
+                if y2 + i < len(grid):
+                    grid[y2 + i][x] = 0
+
+
+def generate_map(size):
+    grid = create_empty_map(size)
     rooms = []
     for _ in range(room_count):
         w, h = random.randint(min_size, max_size), random.randint(min_size, max_size)
