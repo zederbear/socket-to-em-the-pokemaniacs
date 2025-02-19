@@ -1,5 +1,6 @@
 import random
 import time
+import pygame
 
 def create_empty_map(size):
     return [[1 for _ in range(size)] for _ in range(size)]
@@ -54,4 +55,3 @@ def get_map_data(grid):
 if __name__ == "__main__":
     game_map = generate_map(51)
     print_map(game_map)
-    map_data = get_map_data(game_map)
