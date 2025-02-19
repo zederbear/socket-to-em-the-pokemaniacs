@@ -52,8 +52,6 @@ def get_map_data(grid):
     return grid
 
 if __name__ == "__main__":
-    while True:
-        game_map = generate_map(51)
-        time.sleep(0.5)
-        print_map(game_map)
-        map_data = get_map_data(game_map)
+    game_map = generate_map(51)
+    print_map(game_map)
+    map_data = get_map_data(game_map)
