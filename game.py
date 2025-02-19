@@ -27,7 +27,7 @@ def render_map(grid, players, cell_size=10):
         
         for player in players:
             player.handle_movement(grid, dt)
-            pygame.draw.rect(screen, red, (int(player.x * cell_size), int(player.y * cell_size), cell_size, cell_size))
+            pygame.draw.rect(screen, red, (int(player.x * cell_size) - (0.5 * cell_size), int(player.y * cell_size) - (0.5 * cell_size), cell_size, cell_size))
         
         pygame.display.flip()
         
@@ -60,13 +60,30 @@ class Player:
         new_x, new_y = self.x, self.y
         
         if keys[pygame.K_w]:
-            new_y -= self.speed * dt
+            if keys[pygame.K_a]:
+                new_x -= self.speed * dt * 0.7071
+                new_y -= self.speed * dt * 0.7071
+            elif keys[pygame.K_d]:
+                new_x += self.speed * dt * 0.7071
+                new_y -= self.speed * dt * 0.7071
+            else:
+                new_y -= self.speed * dt
         if keys[pygame.K_s]:
-            new_y += self.speed * dt
+            if keys[pygame.K_a]:
+                new_x -= self.speed * dt * 0.7071
+                new_y += self.speed * dt * 0.7071
+            elif keys[pygame.K_d]:
+                new_x += self.speed * dt * 0.7071
+                new_y += self.speed * dt * 0.7071
+            else:
+                new_y += self.speed * dt
         if keys[pygame.K_a]:
-            new_x -= self.speed * dt
+            if not keys[pygame.K_w] and not keys[pygame.K_s]:
+                new_x -= self.speed * dt
         if keys[pygame.K_d]:
-            new_x += self.speed * dt
+            if not keys[pygame.K_w] and not keys[pygame.K_s]:
+                new_x += self.speed * dt
+        
         
         # Apply movement only if there's no collision
         if self.can_move(grid, new_x, self.y):
@@ -83,6 +100,6 @@ def map_display(map_size):
             player_start = (random.randint(1, map_size - 2), random.randint(1, map_size - 2))
         players.append(Player(float(player_start[0]), float(player_start[1])))
     
-    render_map(game_map, players)
+    render_map(game_map, players, 30)
 
-map_display(51)
+
