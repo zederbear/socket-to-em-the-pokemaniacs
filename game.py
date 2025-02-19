@@ -5,7 +5,7 @@ from map import generate_map, print_map, get_map_data
 def render_map(grid, players, cell_size=10):
     pygame.init()
     size = len(grid) * cell_size
-    screen = pygame.display.set_mode((size, size))
+    screen = pygame.display.set_mode((1000, 1000))
     pygame.display.set_caption("Map Renderer")
     
     black = (0, 0, 0)
@@ -74,4 +74,4 @@ class Player:
         if 0 <= new_x < len(grid[0]) and 0 <= new_y < len(grid) and grid[new_y][new_x] == 0:
             self.move(new_x, new_y)
 
-map_display(51)
+map_display(501)
