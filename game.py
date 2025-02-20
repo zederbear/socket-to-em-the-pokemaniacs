@@ -8,6 +8,7 @@ class Game:
         self.map_size = map_size
         self.game_map = generate_map(map_size)
         pygame.init()
+
         self.cell_size = 10
         screen_size = len(self.game_map) * self.cell_size
         self.screen = pygame.display.set_mode((screen_size, screen_size))
@@ -34,6 +35,42 @@ class Game:
                 if cell == 1:
                     pygame.draw.rect(self.screen, (255, 255, 255),
                                       (x * self.cell_size, y * self.cell_size, self.cell_size, self.cell_size))
+        size = len(grid) * cell_size
+        screen = pygame.display.set_mode((size, size))
+        pygame.display.set_caption("Textured Map Renderer")
+        
+        # Load the texture image
+        texture = pygame.image.load("floor.jpg").convert()  # Replace with your image path
+
+        black = (0, 0, 0)
+        white = (255, 255, 255)
+        red = (255, 0, 0)
+        
+        clock = pygame.time.Clock()
+        
+        running = True
+        while running:
+            dt = clock.tick(60) / 1000  # Delta time (seconds)
+            
+            # Tile the background with the texture
+            for x in range(0, size, texture.get_width()):
+                for y in range(0, size, texture.get_height()):
+                    screen.blit(texture, (x, y))
+            
+            for y, row in enumerate(grid):
+                for x, cell in enumerate(row):
+                    if cell == 1:
+                        pygame.draw.rect(screen, black, (x * cell_size, y * cell_size, cell_size, cell_size))
+            
+            for player in players:
+                player.handle_movement(grid, dt)
+                pygame.draw.rect(screen, red, (int(player.x * cell_size) - (0.5 * cell_size), int(player.y * cell_size) - (0.5 * cell_size), cell_size, cell_size))
+            
+            pygame.display.flip()
+            
+            for event in pygame.event.get():
+                if event.type == pygame.QUIT:
+                    running = False
         
         pygame.draw.rect(self.screen, (255, 0, 0),
                             (int(self.local_player.x * self.cell_size) - int(0.5 * self.cell_size),
