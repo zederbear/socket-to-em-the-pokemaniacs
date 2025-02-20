@@ -18,9 +18,11 @@ class Game:
     
     def get_spawn_position(self):
         x, y = 1, 1
-        while self.game_map[y][x] == 1:
+        while True:
             x = random.randint(1, self.map_size - 2)
             y = random.randint(1, self.map_size - 2)
+            if self.game_map[y][x] == 0:
+                break
         return float(x), float(y)
 
     def display_map(self):
