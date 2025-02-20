@@ -10,8 +10,11 @@ class Game:
         pygame.init()
         size = len(grid) * cell_size
         screen = pygame.display.set_mode((size, size))
-        pygame.display.set_caption("Smooth Map Renderer")
+        pygame.display.set_caption("Textured Map Renderer")
         
+        # Load the texture image
+        texture = pygame.image.load("floor.jpg").convert()  # Replace with your image path
+
         black = (0, 0, 0)
         white = (255, 255, 255)
         red = (255, 0, 0)
@@ -22,12 +25,15 @@ class Game:
         while running:
             dt = clock.tick(60) / 1000  # Delta time (seconds)
             
-            screen.fill(black)
+            # Tile the background with the texture
+            for x in range(0, size, texture.get_width()):
+                for y in range(0, size, texture.get_height()):
+                    screen.blit(texture, (x, y))
             
             for y, row in enumerate(grid):
                 for x, cell in enumerate(row):
                     if cell == 1:
-                        pygame.draw.rect(screen, white, (x * cell_size, y * cell_size, cell_size, cell_size))
+                        pygame.draw.rect(screen, black, (x * cell_size, y * cell_size, cell_size, cell_size))
             
             for player in players:
                 player.handle_movement(grid, dt)
