@@ -18,15 +18,18 @@ def main():
         game = Game()
         game.receive_map(client)
 
-        try:
-            while True:
-                game.display_map()
-                game.send_player_data(client)
-                game.receive_player_data(client)
-        except ConnectionResetError:
-            print("Server disconnected")
-            client.close()
-            return
+        running = True
+        while running:
+
+            running = game.display_map()
+            game.send_player_data(client)
+            game.receive_player_data(client)
     except ConnectionRefusedError:
         print("Connection refused")
-        return
+    except ConnectionResetError:
+        print("Server disconnected")
+    finally:
+        client.close()
+
+if __name__ == "__main__":
+    main()

@@ -1,14 +1,12 @@
 import socket
 import json
-from game import Game 
+from game import Game
+from map import generate_map 
 
 def main():
     server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    
     port = int(input("Enter port: "))
-
     server.bind(('', port))
-
     server.listen(1)
     print(f"Server listening on port {port}")
 
@@ -20,17 +18,20 @@ def main():
 
     conn.send("ready".encode())
 
-    game.generate_map(51)
     game.send_map(conn)
 
     try:
-        while True:
-            game.display_map()
+        running = True
+        while running:
+            running = game.display_map()
             game.receive_player_data(conn)
             game.send_player_data(conn)
     except ConnectionResetError:
         print("Opponent disconnected")
+    finally:
         conn.close()
         server.close()
-        return
+
+if __name__ == "__main__":
+    main()
     

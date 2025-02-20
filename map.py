@@ -1,5 +1,4 @@
 import random
-import time
 import pygame
 
 def create_empty_map(size):
