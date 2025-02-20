@@ -1,45 +1,73 @@
 import pygame
 import random
+import json
 from map import generate_map
+
 class Game:
-    def __init__(self, map_size):
+    def __init__(self, map_size=51):
         self.map_size = map_size
         self.game_map = generate_map(map_size)
-
-    def render_map(grid, players, cell_size=10):
         pygame.init()
-        size = len(grid) * cell_size
-        screen = pygame.display.set_mode((size, size))
-        pygame.display.set_caption("Smooth Map Renderer")
+        self.cell_size = 10
+        screen_size = len(self.game_map) * self.cell_size
+        self.screen = pygame.display.set_mode((screen_size, screen_size))
+        pygame.display.set_caption("Multiplayer tag")
+        self.clock = pygame.time.Clock()
+        self.local_player = Player(*self.get_spawn_position())
+        self.remote_player = Player(*self.get_spawn_position())
+    
+    def get_spawn_position(self):
+        x, y = 1, 1
+        while self.game_map[y][x] == 1:
+            x = random.randint(1, self.map_size - 2)
+            y = random.randint(1, self.map_size - 2)
+        return float(x), float(y)
+
+    def display_map(self):
+        dt = self.clock.tick(60) / 1000  # Delta time (seconds)
         
-        black = (0, 0, 0)
-        white = (255, 255, 255)
-        red = (255, 0, 0)
+        self.local_player.handle_movement(self.game_map, dt)
+
+        self.screen.fill((0, 0, 0))
+        for y, row in enumerate(self.game_map):
+            for x, cell in enumerate(row):
+                if cell == 1:
+                    pygame.draw.rect(self.screen, (255, 255, 255),
+                                      (x * self.cell_size, y * self.cell_size, self.cell_size, self.cell_size))
         
-        clock = pygame.time.Clock()
-        
-        running = True
-        while running:
-            dt = clock.tick(60) / 1000  # Delta time (seconds)
-            
-            screen.fill(black)
-            
-            for y, row in enumerate(grid):
-                for x, cell in enumerate(row):
-                    if cell == 1:
-                        pygame.draw.rect(screen, white, (x * cell_size, y * cell_size, cell_size, cell_size))
-            
-            for player in players:
-                player.handle_movement(grid, dt)
-                pygame.draw.rect(screen, red, (int(player.x * cell_size) - (0.5 * cell_size), int(player.y * cell_size) - (0.5 * cell_size), cell_size, cell_size))
-            
-            pygame.display.flip()
-            
-            for event in pygame.event.get():
-                if event.type == pygame.QUIT:
-                    running = False
-        
-        pygame.quit()
+        pygame.draw.rect(self.screen, (255, 0, 0),
+                            (int(self.local_player.x * self.cell_size) - int(0.5 * self.cell_size),
+                            int(self.local_player.y * self.cell_size) - int(0.5 * self.cell_size),
+                            self.cell_size, self.cell_size))
+        pygame.draw.rect(self.screen, (0, 0, 255),
+                            (int(self.remote_player.x * self.cell_size) - int(0.5 * self.cell_size),
+                            int(self.remote_player.y * self.cell_size) - int(0.5 * self.cell_size),
+                            self.cell_size, self.cell_size))
+        pygame.display.flip()
+
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                return False
+        return True
+    
+    def send_map(self, conn):
+        data = json.dumps(self.game_map)
+        conn.sendall(data.encode('utf-8'))
+
+    def receive_map(self, conn):
+        data = conn.recv(8192).decode('utf-8')
+        self.game_map = json.loads(data)
+    
+    def send_player_data(self, conn):
+        data = {'x': self.local_player.x, 'y': self.local_player.y}
+        msg = json.dumps(data)
+        conn.sendall(msg.encode('utf-8'))
+    
+    def receive_player_data(self, conn):
+        data = conn.recv(1024).decode('utf-8')
+        player_data = json.loads(data)
+        self.remote_player.x = player_data['x']
+        self.remote_player.y = player_data['y']
 
 class Player:
     def __init__(self, x, y):
@@ -55,6 +83,8 @@ class Player:
         top = int(new_y - self.size)
         bottom = int(new_y + self.size)
         
+        if left < 0 or top < 0 or right >= len(grid[0]) or bottom >= len(grid):
+            return False
         if grid[top][left] == 1 or grid[top][right] == 1 or grid[bottom][left] == 1 or grid[bottom][right] == 1:
             return False
         return True
@@ -95,15 +125,15 @@ class Player:
         if self.can_move(grid, self.x, new_y):
             self.y = new_y
 
-def map_display(map_size):
-    game_map = generate_map(map_size)
-    players = []
-    for _ in range(1):  # Change this to add multiple players
-        player_start = (1, 1)
-        while game_map[player_start[1]][player_start[0]] == 1:
-            player_start = (random.randint(1, map_size - 2), random.randint(1, map_size - 2))
-        players.append(Player(float(player_start[0]), float(player_start[1])))
+# def map_display(map_size):
+#     game_map = generate_map(map_size)
+#     players = []
+#     for _ in range(1):  # Change this to add multiple players
+#         player_start = (1, 1)
+#         while game_map[player_start[1]][player_start[0]] == 1:
+#             player_start = (random.randint(1, map_size - 2), random.randint(1, map_size - 2))
+#         players.append(Player(float(player_start[0]), float(player_start[1])))
     
-    Game.render_map(game_map, players, 10)
+#     Game.render_map(game_map, players, 10)
 
-map_display(51)
+# map_display(51)
