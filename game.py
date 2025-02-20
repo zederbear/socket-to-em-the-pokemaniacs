@@ -23,7 +23,7 @@ class Game:
             y = random.randint(1, self.map_size - 2)
             if self.game_map[y][x] == 0:
                 break
-        return float(x), float(-y)
+        return float(-x), float(y)
 
     def display_map(self):
         dt = self.clock.tick(60) / 1000  # Delta time (seconds)
