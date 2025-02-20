@@ -1,8 +1,11 @@
 import pygame
 import random
-from map import *
-
+from map import generate_map
 class Game:
+    def __init__(self, map_size):
+        self.map_size = map_size
+        self.game_map = generate_map(map_size)
+
     def render_map(grid, players, cell_size=10):
         pygame.init()
         size = len(grid) * cell_size
@@ -38,32 +41,6 @@ class Game:
         
         pygame.quit()
 
-    def generate_map(size):
-        grid = create_empty_map(size)
-        rooms = []
-        min_distance = 5  # Minimum distance between room centers
-        hallway_cells = set()  # To store hallway cell coordinates
-        connect_prob = 0.75 # Probability of connecting to existing hallway
-
-        max_rooms = random.randint(10, 20)
-        for _ in range(max_rooms):
-            w, h = random.randint(5, 10), random.randint(5, 10)
-            x, y = random.randint(1, size - w - 1), random.randint(1, size - h - 1)
-
-            # Check if the new room is too close to existing rooms
-            valid_position = True
-            for rx, ry in rooms:
-                distance = ((x + w // 2 - rx) ** 2 + (y + h // 2 - ry) ** 2) ** 0.5
-                if distance < min_distance:
-                    valid_position = False
-                    break
-
-            if valid_position:
-                carve_room(grid, x, y, w, h)
-                rooms.append((x + w // 2, y + h // 2))
-
-        for i in range(len(rooms) - 1):
-            carve_hallway(grid, *rooms[i], *rooms[i + 1], hallway_cells, connect_prob)
 class Player:
     def __init__(self, x, y):
         self.x = x
@@ -119,7 +96,7 @@ class Player:
             self.y = new_y
 
 def map_display(map_size):
-    game_map = Game.generate_map(map_size)
+    game_map = generate_map(map_size)
     players = []
     for _ in range(1):  # Change this to add multiple players
         player_start = (1, 1)
