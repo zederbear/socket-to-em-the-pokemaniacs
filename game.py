@@ -14,7 +14,7 @@ class Game:
         pygame.display.set_caption("Multiplayer tag")
         self.clock = pygame.time.Clock()
         self.local_player = Player(*self.get_spawn_position())
-        self.remote_player = Player(*self.get_spawn_position())
+        self.remote_players = {}
     
     def get_spawn_position(self):
         x, y = 1, 1
@@ -39,10 +39,12 @@ class Game:
                             (int(self.local_player.x * self.cell_size) - int(0.5 * self.cell_size),
                             int(self.local_player.y * self.cell_size) - int(0.5 * self.cell_size),
                             self.cell_size, self.cell_size))
-        pygame.draw.rect(self.screen, (0, 0, 255),
-                            (int(self.remote_player.x * self.cell_size) - int(0.5 * self.cell_size),
-                            int(self.remote_player.y * self.cell_size) - int(0.5 * self.cell_size),
-                            self.cell_size, self.cell_size))
+        for player in self.remote_players.values():
+            pygame.draw.rect(self.screen, (0, 0, 255),
+                             (int(player.x * self.cell_size) - int(0.5 * self.cell_size),
+                              int(player.y * self.cell_size) - int(0.5 * self.cell_size),
+                              self.cell_size, self.cell_size))
+        
         pygame.display.flip()
 
         for event in pygame.event.get():
@@ -59,9 +61,29 @@ class Game:
         self.game_map = json.loads(data)
     
     def send_player_data(self, conn):
-        data = {'x': self.local_player.x, 'y': self.local_player.y}
-        msg = json.dumps(data)
+        data = {
+            'type': 'pos',
+            'data': {
+                'x': self.local_player.x, 
+                'y': self.local_player.y
+            }
+        }
+        msg = json.dumps(data) + '\n'
         conn.sendall(msg.encode('utf-8'))
+    
+    def receive_state(self, conn):
+        data = conn.recv(1024).decode('utf-8')
+        if not data:
+            return  # Handle disconnect or error as needed.
+        state_data = json.loads(data)
+        clients_data = state_data.get('data', {}).get('clients', {})
+        # Update or add remote players.
+        for client_id, pos in clients_data.items():
+            if client_id not in self.remote_players:
+                self.remote_players[client_id] = Player(pos['x'], pos['y'])
+            else:
+                self.remote_players[client_id].x = pos['x']
+                self.remote_players[client_id].y = pos['y']
     
     def receive_player_data(self, conn):
         data = conn.recv(1024).decode('utf-8')
