@@ -43,3 +43,31 @@ class Powerup:
 
 
 
+class Powerup:
+    def __init__(self):
+
+    def render(self):
+        pass
+
+    def apply_powerup(self, duration):
+        def powerup_thread():
+            for i in range(duration):
+                print(f"Powerup active: {duration - i} seconds remaining")
+                time.sleep(1)
+            self.player.ghost (
+                # insert no collision code
+            )
+            self.player.ghost = False
+            print("Powerup ended")
+
+        threading.Thread(target=powerup_thread).start()
+
+game = Powerup()
+
+game.apply_powerup(duration=30)
+print(f"Gohst time: {game.player.speed}")
+
+game.run()
+
+
+
