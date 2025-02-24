@@ -13,13 +13,13 @@ def main():
         print("Connected to server!")
         
         game = Game()
-        game.receive_map(client)  # This call receives the entire map message.
+        game.receive_map(client)  # Receive and update the map
         
         running = True
         while running:
             running = game.display_map()
             game.send_player_data(client)
-            game.receive_player_data(client)
+            game.receive_state(client)  # Updated method name
     except ConnectionRefusedError:
         print("Connection refused")
     except ConnectionResetError:

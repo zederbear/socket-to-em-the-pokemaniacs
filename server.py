@@ -34,7 +34,7 @@ def handle_client(conn, client_id, client_player):
                     break
 
 def broadcast_state(game, server_player):
-    """Broadcasts the current state (server plus all clients) to every client."""
+    """Broadcast the current state (server and all clients) to every client."""
     with clients_lock:
         state = {
             "type": "state",
@@ -65,7 +65,7 @@ def accept_clients(server_socket, game, used_spawns):
             conn.close()
             continue
 
-        # Choose a spawn that is not used (considering the server spawn as well).
+        # Choose a spawn that is not already used.
         spawn = None
         for y, row in enumerate(game.game_map):
             for x, cell in enumerate(row):
@@ -98,14 +98,10 @@ def main():
 
     server_player = game.local_player
 
-    game = Game()
-
+    # Removed redundant game reinitialization.
     while True:
         broadcast_state(game, server_player)
-
         time.sleep(0.05)
-
 
 if __name__ == "__main__":
     main()
-    

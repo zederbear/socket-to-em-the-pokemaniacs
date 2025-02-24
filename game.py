@@ -61,7 +61,11 @@ class Game:
         while "\n" not in buffer:
             buffer += conn.recv(1024).decode('utf-8')
         line, _ = buffer.split("\n", 1)
-        self.game_map = json.loads(line)
+        msg = json.loads(line)
+        if msg.get("type") == "map":
+            self.game_map = msg["data"]
+        else:
+            self.game_map = msg
     
     def send_player_data(self, conn):
         data = {
@@ -79,8 +83,8 @@ class Game:
         if not data:
             return  # Handle disconnect or error as needed.
         state_data = json.loads(data)
+        # Here we update only the remote clients data
         clients_data = state_data.get('data', {}).get('clients', {})
-        # Update or add remote players.
         for client_id, pos in clients_data.items():
             if client_id not in self.remote_players:
                 self.remote_players[client_id] = Player(pos['x'], pos['y'])
@@ -142,6 +146,7 @@ class Player:
             self.x = new_x
         if self.can_move(grid, self.x, new_y):
             self.y = new_y
+
 
 # def map_display(map_size):
 #     game_map = generate_map(map_size)
