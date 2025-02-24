@@ -33,12 +33,12 @@ class Game:
             for x, cell in enumerate(row):
                 if cell == 1:
                     pygame.draw.rect(self.screen, (255, 255, 255),
-                                      (x * self.cell_size, y * self.cell_size, self.cell_size, self.cell_size))
+                                     (x * self.cell_size, y * self.cell_size, self.cell_size, self.cell_size))
         
         pygame.draw.rect(self.screen, (255, 0, 0),
-                            (int(self.local_player.x * self.cell_size) - int(0.5 * self.cell_size),
-                            int(self.local_player.y * self.cell_size) - int(0.5 * self.cell_size),
-                            self.cell_size, self.cell_size))
+                         (int(self.local_player.x * self.cell_size) - int(0.5 * self.cell_size),
+                          int(self.local_player.y * self.cell_size) - int(0.5 * self.cell_size),
+                          self.cell_size, self.cell_size))
         for player in self.remote_players.values():
             pygame.draw.rect(self.screen, (0, 0, 255),
                              (int(player.x * self.cell_size) - int(0.5 * self.cell_size),
@@ -87,12 +87,6 @@ class Game:
             else:
                 self.remote_players[client_id].x = pos['x']
                 self.remote_players[client_id].y = pos['y']
-    
-    def receive_player_data(self, conn):
-        data = conn.recv(1024).decode('utf-8')
-        player_data = json.loads(data)
-        self.remote_player.x = player_data['x']
-        self.remote_player.y = player_data['y']
 
 class Player:
     def __init__(self, x, y):
@@ -142,7 +136,6 @@ class Player:
         if keys[pygame.K_d]:
             if not keys[pygame.K_w] and not keys[pygame.K_s]:
                 new_x += self.speed * dt
-        
         
         # Apply movement only if there's no collision
         if self.can_move(grid, new_x, self.y):
