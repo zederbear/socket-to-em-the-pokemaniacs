@@ -88,7 +88,7 @@ def main():
     port = int(input("Enter port: "))
     server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     server.bind(('', port))
-    server.listen(5)
+    server.listen(2)
     print(f"Server listening on port {port}")
 
     game = Game()

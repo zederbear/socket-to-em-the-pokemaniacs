@@ -3,7 +3,6 @@ import json
 from game import Game
 
 def main():
-
     client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     
     server_ip = input("Enter server IP: ")
@@ -12,15 +11,12 @@ def main():
     try:
         client.connect((server_ip, port))
         print("Connected to server!")
-
-        client.recv(1024).decode()
         
         game = Game()
-        game.receive_map(client)
-
+        game.receive_map(client)  # This call receives the entire map message.
+        
         running = True
         while running:
-
             running = game.display_map()
             game.send_player_data(client)
             game.receive_player_data(client)
