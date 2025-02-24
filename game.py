@@ -15,6 +15,19 @@ class Game:
         self.clock = pygame.time.Clock()
         self.local_player = Player(*self.get_spawn_position())
         self.remote_player = Player(*self.get_spawn_position())
+
+    def select_tagger(self):
+        self.tagger = random.choice([self.local_player, self.remote_player])
+
+    def send_tagger(self, conn):
+        data = {'tagger': self.tagger}
+        msg = json.dumps(data)
+        conn.sendall(msg.encode('utf-8'))
+    
+    def receive_tagger(self, conn):
+        data = conn.recv(1024).decode('utf-8')
+        tagger_data = json.loads(data)
+        self.tagger = tagger_data['tagger']
     
     def get_spawn_position(self):
         x, y = 1, 1
@@ -26,7 +39,7 @@ class Game:
     def display_map(self):
         dt = self.clock.tick(60) / 1000  # Delta time (seconds)
         
-        self.local_player.handle_movement(self.game_map, dt)
+        self.local_player.handle_movement(self.game_map, dt, self.remote_player)
 
         self.screen.fill((0, 0, 0))
         for y, row in enumerate(self.game_map):
@@ -69,15 +82,22 @@ class Game:
         self.remote_player.x = player_data['x']
         self.remote_player.y = player_data['y']
 
+    def tag(self):
+        distance = ((self.local_player.x - self.remote_player.x) ** 2 + (self.local_player.y - self.remote_player.y) ** 2) ** 0.5
+        if distance < self.local_player.size + self.remote_player.size:
+            return True
+        else:
+            return False
+
 class Player:
     def __init__(self, x, y):
         self.x = x
         self.y = y
         self.speed = 15  # Movement speed in cells per second
-        self.size = 0.4  # Collision box size factor
+        self.size = 0.4  # Collision box s ize factor
     
-    def can_move(self, grid, new_x, new_y):
-        """Check if the player can move to the new position without colliding."""
+    def can_move(self, grid, new_x, new_y, other_player=None):
+        """Check if the player can move to the new position without colliding with walls or another player."""
         left = int(new_x - self.size)
         right = int(new_x + self.size)
         top = int(new_y - self.size)
@@ -87,9 +107,16 @@ class Player:
             return False
         if grid[top][left] == 1 or grid[top][right] == 1 or grid[bottom][left] == 1 or grid[bottom][right] == 1:
             return False
+
+        if other_player:
+            # Check collision with the other player
+            distance = ((new_x - other_player.x) ** 2 + (new_y - other_player.y) ** 2) ** 0.5
+            if distance < self.size + other_player.size:
+                return False  # Collision with the other player
+        
         return True
     
-    def handle_movement(self, grid, dt):
+    def handle_movement(self, grid, dt, other_player=None):
         keys = pygame.key.get_pressed()
         new_x, new_y = self.x, self.y
         
@@ -120,9 +147,9 @@ class Player:
         
         
         # Apply movement only if there's no collision
-        if self.can_move(grid, new_x, self.y):
+        if self.can_move(grid, new_x, self.y, other_player):
             self.x = new_x
-        if self.can_move(grid, self.x, new_y):
+        if self.can_move(grid, self.x, new_y, other_player):
             self.y = new_y
 
 # def map_display(map_size):
