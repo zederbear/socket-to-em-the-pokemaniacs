@@ -32,18 +32,31 @@ class Game:
         for y, row in enumerate(self.game_map):
             for x, cell in enumerate(row):
                 if cell == 1:
-                    pygame.draw.rect(self.screen, (255, 255, 255),
-                                     (x * self.cell_size, y * self.cell_size, self.cell_size, self.cell_size))
+                    pygame.draw.rect(
+                        self.screen,
+                        (255, 255, 255),
+                        (x * self.cell_size, y * self.cell_size, self.cell_size, self.cell_size)
+                    )
         
-        pygame.draw.rect(self.screen, (255, 0, 0),
-                         (int(self.local_player.x * self.cell_size) - int(0.5 * self.cell_size),
-                          int(self.local_player.y * self.cell_size) - int(0.5 * self.cell_size),
-                          self.cell_size, self.cell_size))
+        pygame.draw.rect(
+            self.screen,
+            (255, 0, 0),
+            (
+                int(self.local_player.x * self.cell_size) - int(0.5 * self.cell_size),
+                int(self.local_player.y * self.cell_size) - int(0.5 * self.cell_size),
+                self.cell_size, self.cell_size
+            )
+        )
         for player in self.remote_players.values():
-            pygame.draw.rect(self.screen, (0, 0, 255),
-                             (int(player.x * self.cell_size) - int(0.5 * self.cell_size),
-                              int(player.y * self.cell_size) - int(0.5 * self.cell_size),
-                              self.cell_size, self.cell_size))
+            pygame.draw.rect(
+                self.screen,
+                (0, 0, 255),
+                (
+                    int(player.x * self.cell_size) - int(0.5 * self.cell_size),
+                    int(player.y * self.cell_size) - int(0.5 * self.cell_size),
+                    self.cell_size, self.cell_size
+                )
+            )
         
         pygame.display.flip()
 
@@ -79,11 +92,19 @@ class Game:
         conn.sendall(msg.encode('utf-8'))
     
     def receive_state(self, conn):
-        data = conn.recv(1024).decode('utf-8')
-        if not data:
-            return  # Handle disconnect or error as needed.
-        state_data = json.loads(data)
-        # Here we update only the remote clients data
+        buffer = ""
+        try:
+            while "\n" not in buffer:
+                part = conn.recv(1024).decode('utf-8')
+                if not part:
+                    return  # Connection closed
+                buffer += part
+            line, _ = buffer.split("\n", 1)
+            state_data = json.loads(line)
+        except Exception as e:
+            print("Error receiving state:", e)
+            return
+
         clients_data = state_data.get('data', {}).get('clients', {})
         for client_id, pos in clients_data.items():
             if client_id not in self.remote_players:
@@ -146,17 +167,3 @@ class Player:
             self.x = new_x
         if self.can_move(grid, self.x, new_y):
             self.y = new_y
-
-
-# def map_display(map_size):
-#     game_map = generate_map(map_size)
-#     players = []
-#     for _ in range(1):  # Change this to add multiple players
-#         player_start = (1, 1)
-#         while game_map[player_start[1]][player_start[0]] == 1:
-#             player_start = (random.randint(1, map_size - 2), random.randint(1, map_size - 2))
-#         players.append(Player(float(player_start[0]), float(player_start[1])))
-    
-#     Game.render_map(game_map, players, 10)
-
-# map_display(51)

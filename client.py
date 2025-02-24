@@ -19,7 +19,7 @@ def main():
         while running:
             running = game.display_map()
             game.send_player_data(client)
-            game.receive_state(client)  # Updated method name
+            game.receive_state(client)  # Now receives complete messages
     except ConnectionRefusedError:
         print("Connection refused")
     except ConnectionResetError:
