@@ -57,8 +57,11 @@ class Game:
         conn.sendall(data.encode('utf-8'))
 
     def receive_map(self, conn):
-        data = conn.recv(8192).decode('utf-8')
-        self.game_map = json.loads(data)
+        buffer = ""
+        while "\n" not in buffer:
+            buffer += conn.recv(1024).decode('utf-8')
+        line, _ = buffer.split("\n", 1)
+        self.game_map = json.loads(line)
     
     def send_player_data(self, conn):
         data = {
