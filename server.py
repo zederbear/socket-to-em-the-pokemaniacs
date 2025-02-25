@@ -1,7 +1,7 @@
 import socket
 import json
 import threading
-import time
+import random
 import pygame
 from game import Game, Player
 from map import generate_map 
@@ -73,15 +73,18 @@ def accept_clients(server_socket, game, used_spawns):
 
         # Choose a spawn that is not already used.
         spawn = None
+        valid_spawns = []
         for y, row in enumerate(game.game_map):
             for x, cell in enumerate(row):
                 if cell == 0 and (x, y) not in used_spawns:
-                    spawn = (x, y)
-                    break
-            if spawn:
-                break
-        if not spawn:
-            spawn = (1, 1)
+                    valid_spawns.append((x, y))
+        
+        if valid_spawns:
+            spawn = random.choice(valid_spawns)
+        else:
+            spawn = (1, 1)  # Default spawn if no valid spawns are found
+            print("No valid spawns found. Using default spawn.")
+            
         used_spawns.add(spawn)
         client_player = Player(float(spawn[0]), float(spawn[1]))
 
