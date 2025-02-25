@@ -97,7 +97,7 @@ class Player:
         self.x = x
         self.y = y
         self.speed = 15  # Movement speed in cells per second
-        self.size = 0.4  # Collision box size factor
+        self.size = 1  # Collision box size factor
     
     def can_move(self, grid, new_x, new_y):
         """Check if the player can move to the new position without colliding."""
