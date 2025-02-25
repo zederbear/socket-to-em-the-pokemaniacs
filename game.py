@@ -17,12 +17,13 @@ class Game:
         self.remote_players = {}
     
     def get_spawn_position(self):
-        pos = [1, 1]
         validPos = []
         for y in range(len(self.game_map)):
             for x in range(len(self.game_map[y])):
                 if self.game_map[y][x] == 0:
                     validPos.append([x, y])
+        if not validPos:
+            return 1, 1  # Return a default position if no valid positions are found
         pos = validPos[random.randint(0, len(validPos) - 1)]
         print(pos)
         return float(pos[0]), float(pos[1])
@@ -62,7 +63,7 @@ class Game:
                 )
             )
         
-        # pygame.display.flip()
+        pygame.display.flip()
 
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
