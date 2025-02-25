@@ -71,19 +71,8 @@ def accept_clients(server_socket, game, used_spawns):
             conn.close()
             continue
 
-        # Choose a spawn that is not already used.
-        spawn = None
-        for y, row in enumerate(game.game_map):
-            for x, cell in enumerate(row):
-                if cell == 0 and (x, y) not in used_spawns:
-                    spawn = (x, y)
-                    break
-            if spawn:
-                break
-        if not spawn:
-            spawn = (1, 1)
-        used_spawns.add(spawn)
-        client_player = Player(float(spawn[0]), float(spawn[1]))
+        # Choose a random spawn.
+        client_player = Player(*game.get_spawn_position())
 
         with clients_lock:
             clients.append((client_id_counter, client_player, conn))

@@ -17,18 +17,12 @@ class Game:
         self.remote_players = {}
     
     def get_spawn_position(self):
-        valid_positions = []
-        for y in range(len(self.game_map)):
-            for x in range(len(self.game_map[y])):
-                if self.game_map[y][x] == 0:
-                    valid_positions.append((x, y))
-
-        if not valid_positions:
-            return 1, 1  # Default position if no valid spawns
-
-        pos = random.choice(valid_positions)
-        print(pos)
-        return float(pos[0]), float(pos[1])
+        """Finds a valid spawn position (black cell) on the map."""
+        while True:
+            x = random.randint(0, len(self.game_map[0]) - 1)
+            y = random.randint(0, len(self.game_map) - 1)
+            if self.game_map[y][x] == 0:  # Check for black cell (value 0)
+                return float(x), float(y)
 
     def display_map(self):
         dt = self.clock.tick(60) / 1000  # Delta time (seconds)
