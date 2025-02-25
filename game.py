@@ -17,13 +17,13 @@ class Game:
         self.remote_players = {}
     
     def get_spawn_position(self):
-        pos = 1, 1
+        pos = [1, 1]
         validPos = []
         for y in range(len(self.game_map)):
             for x in range(len(self.game_map[y])):
-                if self.game_map[y][x] == 0: validPos.append(float(x), float(y))
+                if self.game_map[y][x] == 0: validPos.append([x, y])
         pos = validPos[random.randint(0, len(validPos) - 1)]
-        return pos
+        return float(pos[0]), float(pos[1])
 
     def display_map(self):
         dt = self.clock.tick(60) / 1000  # Delta time (seconds)
