@@ -1,7 +1,7 @@
 import socket
 import json
 import threading
-import time
+import random
 import pygame
 from game import Game, Player
 from map import generate_map 
