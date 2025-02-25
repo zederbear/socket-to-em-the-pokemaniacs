@@ -17,10 +17,7 @@ class Game:
         self.remote_players = {}
     
     def get_spawn_position(self):
-        x, y = 1, 1
-        while self.game_map[y][x] == 1:
-            x = random.randint(1, self.map_size - 2)
-            y = random.randint(1, self.map_size - 2)
+        x, y = 1, 10
         return float(x), float(y)
 
     def display_map(self):
