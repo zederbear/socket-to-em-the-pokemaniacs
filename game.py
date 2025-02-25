@@ -24,9 +24,11 @@ class Game:
                     validPos.append([x, y])
         if not validPos:
             return 1, 1  # Return a default position if no valid positions are found
-        pos = validPos[random.randint(0, len(validPos) - 1)]
-        print(pos)
-        return float(pos[0]), float(pos[1])
+        while True:
+            pos = validPos[random.randint(0, len(validPos) - 1)]
+            if self.game_map[int(pos[1])][int(pos[0])] == 0:
+                print(pos)
+                return float(pos[0]), float(pos[1])
 
     def display_map(self):
         dt = self.clock.tick(60) / 1000  # Delta time (seconds)
