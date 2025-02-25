@@ -17,18 +17,18 @@ class Game:
         self.remote_players = {}
     
     def get_spawn_position(self):
-        validPos = []
+        valid_positions = []
         for y in range(len(self.game_map)):
             for x in range(len(self.game_map[y])):
                 if self.game_map[y][x] == 0:
-                    validPos.append([x, y])
-        if not validPos:
-            return 1, 1  # Return a default position if no valid positions are found
-        while True:
-            pos = validPos[random.randint(0, len(validPos) - 1)]
-            if self.game_map[int(pos[1])][int(pos[0])] == 0:
-                print(pos)
-                return float(pos[0]), float(pos[1])
+                    valid_positions.append((x, y))
+
+        if not valid_positions:
+            return 1, 1  # Default position if no valid spawns
+
+        pos = random.choice(valid_positions)
+        print(pos)
+        return float(pos[0]), float(pos[1])
 
     def display_map(self):
         dt = self.clock.tick(60) / 1000  # Delta time (seconds)
