@@ -2,6 +2,7 @@ import socket
 import json
 import threading
 import time
+import pygame
 from game import Game, Player
 from map import generate_map 
 
@@ -9,19 +10,24 @@ clients = []
 clients_lock = threading.Lock()
 
 def handle_client(conn, client_id, client_player):
+    buffer = ""
     try:
         while True:
             data = conn.recv(1024).decode()
             if not data:
                 break
-            try:
-                msg = json.loads(data.strip())
-                if msg["type"] == "pos":
-                    pos = msg["data"]
-                    client_player.x = pos["x"]
-                    client_player.y = pos["y"]
-            except Exception as e:
-                print(f"Error processing message from client {client_id}: {e}")
+            buffer += data
+            # Process complete messages delimited by newline.
+            while "\n" in buffer:
+                line, buffer = buffer.split("\n", 1)
+                try:
+                    msg = json.loads(line)
+                    if msg["type"] == "pos":
+                        pos = msg["data"]
+                        client_player.x = pos["x"]
+                        client_player.y = pos["y"]
+                except Exception as e:
+                    print(f"Error processing message from client {client_id}: {e}")
     except Exception as e:
         print(f"Client {client_id} connection error: {e}")
     finally:
@@ -86,22 +92,26 @@ def accept_clients(server_socket, game, used_spawns):
 
 def main():
     port = int(input("Enter port: "))
-    server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    server.bind(('', port))
-    server.listen(2)
+    server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    server_socket.bind(('', port))
+    server_socket.listen(5)  # Increase backlog if needed.
     print(f"Server listening on port {port}")
 
     game = Game()
     used_spawns = set()
 
-    threading.Thread(target=accept_clients, args=(server, game, used_spawns), daemon=True).start()
+    # Start accepting clients in a separate thread.
+    threading.Thread(target=accept_clients, args=(server_socket, game, used_spawns), daemon=True).start()
 
     server_player = game.local_player
 
-    # Removed redundant game reinitialization.
-    while True:
+    # Main game loop: process input, update the game, render and broadcast state.
+    running = True
+    while running:
+        running = game.display_map()  # This handles movement, rendering, and events.
         broadcast_state(game, server_player)
-        time.sleep(0.05)
+    
+    pygame.quit()  # Cleanly exit pygame when done.
 
 if __name__ == "__main__":
     main()
