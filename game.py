@@ -21,8 +21,9 @@ class Game:
         validPos = []
         for y in range(len(self.game_map)):
             for x in range(len(self.game_map[y])):
-                if self.game_map[y][x] == 1: validPos.append([x, y])
+                if self.game_map[y][x] == 0: validPos.append([x, y])
         pos = validPos[random.randint(0, len(validPos) - 1)]
+        pos = validPos[1]
         return float(pos[0]), float(pos[1])
 
     def display_map(self):
