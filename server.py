@@ -13,7 +13,7 @@ def is_valid_spawn(game_map, x, y):
     """Checks if the given coordinates are a valid spawn position (black cell)."""
     if 0 <= y < len(game_map) and 0 <= x < len(game_map[0]):
         return game_map[y][x] == 0
-    return False
+    return True
 
 def handle_client(conn, client_id, client_player):
     buffer = ""

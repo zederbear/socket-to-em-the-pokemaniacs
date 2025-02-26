@@ -29,8 +29,8 @@ class Game:
             print()
         pos = validPos[random.randint(0, len(validPos) - 1)]
         print(pos)
-        pos[0] = 24
-        pos[1] = 24
+        pos[0] = 25
+        pos[1] = 25
         return float(pos[0]), float(pos[1])
 
     def display_map(self):
@@ -155,8 +155,20 @@ class Player:
         
         if left < 0 or top < 0 or right >= len(grid[0]) or bottom >= len(grid):
             return False
+        
+        # Check corners
         if grid[top][left] == 1 or grid[top][right] == 1 or grid[bottom][left] == 1 or grid[bottom][right] == 1:
             return False
+        
+        # Check midpoints of the sides
+        mid_left_x = int(new_x - self.size)
+        mid_right_x = int(new_x + self.size)
+        mid_top_y = int(new_y - self.size)
+        mid_bottom_y = int(new_y + self.size)
+        
+        if grid[mid_top_y][mid_left_x] == 1 or grid[mid_top_y][mid_right_x] == 1 or grid[mid_bottom_y][left] == 1 or grid[mid_bottom_y][right] == 1:
+            return False
+        
         return True
     
     def handle_movement(self, grid, dt):
@@ -188,7 +200,7 @@ class Player:
             if not keys[pygame.K_w] and not keys[pygame.K_s]:
                 new_x += self.speed * dt
         
-        # if self.can_move(grid, new_x, self.y):
-        #     self.x = new_x
-        # if self.can_move(grid, self.x, new_y):
-        #     self.y = new_y
+        if self.can_move(grid, new_x, self.y):
+            self.x = new_x
+        if self.can_move(grid, self.x, new_y):
+            self.y = new_y
