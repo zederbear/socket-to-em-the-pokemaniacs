@@ -8,12 +8,20 @@ from map import generate_map
 
 clients = []
 clients_lock = threading.Lock()
+client_ip_map = {}
 
 def is_valid_spawn(game_map, x, y):
     """Checks if the given coordinates are a valid spawn position (black cell)."""
     if 0 <= y < len(game_map) and 0 <= x < len(game_map[0]):
         return game_map[y][x] == 0
     return True
+
+def print_client_table():
+    with clients_lock:
+        print("Client ID | IP Address")
+        print("----------------------")
+        for client_id, _, conn, addr in clients:
+            print(f"{client_id}        | {addr[0]}")
 
 def handle_client(conn, client_id, client_player):
     buffer = ""
@@ -42,10 +50,12 @@ def handle_client(conn, client_id, client_player):
         print(f"Client {client_id} disconnected")
         conn.close()
         with clients_lock:
-            for i, (cid, _, _) in enumerate(clients):
+            for i, (cid, _, _, _) in enumerate(clients):
                 if cid == client_id:
                     clients.pop(i)
                     break
+            client_ip_map.pop(client_id, None)
+        print_client_table()
 
 def broadcast_state(game, server_player):
     with clients_lock:
@@ -104,9 +114,11 @@ def accept_clients(server_socket, game, used_spawns):
                 break
 
         with clients_lock:
-            clients.append((client_id_counter, client_player, conn))
+            clients.append((client_id_counter, client_player, conn, addr))
+            client_ip_map[client_id_counter] = addr[0]
         threading.Thread(target=handle_client, args=(conn, client_id_counter, client_player), daemon=True).start()
         client_id_counter += 1
+        print_client_table()
 
 def main():
     port = int(input("Enter port: "))
