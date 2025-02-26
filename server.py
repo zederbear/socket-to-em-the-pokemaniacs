@@ -1,13 +1,19 @@
 import socket
 import json
 import threading
-import time
+import random
 import pygame
 from game import Game, Player
 from map import generate_map 
 
 clients = []
 clients_lock = threading.Lock()
+
+def is_valid_spawn(game_map, x, y):
+    """Checks if the given coordinates are a valid spawn position (black cell)."""
+    if 0 <= y < len(game_map) and 0 <= x < len(game_map[0]):
+        return game_map[y][x] == 0
+    return False
 
 def handle_client(conn, client_id, client_player):
     buffer = ""
@@ -89,19 +95,13 @@ def accept_clients(server_socket, game, used_spawns):
             conn.close()
             continue
 
-        # Choose a spawn that is not already used.
-        spawn = None
-        for y, row in enumerate(game.game_map):
-            for x, cell in enumerate(row):
-                if cell == 0 and (x, y) not in used_spawns:
-                    spawn = (x, y)
-                    break
-            if spawn:
+        # Find a valid spawn position.
+        while True:
+            x = random.randint(0, len(game.game_map[0]) - 1)
+            y = random.randint(0, len(game.game_map) - 1)
+            if is_valid_spawn(game.game_map, x, y):
+                client_player = Player(float(x), float(y))
                 break
-        if not spawn:
-            spawn = (1, 1)
-        used_spawns.add(spawn)
-        client_player = Player(float(spawn[0]), float(spawn[1]))
 
         with clients_lock:
             clients.append((client_id_counter, client_player, conn))
