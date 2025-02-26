@@ -13,26 +13,28 @@ class Game:
         self.screen = pygame.display.set_mode((screen_size, screen_size))
         pygame.display.set_caption("Multiplayer tag")
         self.clock = pygame.time.Clock()
+        self.font = pygame.font.SysFont(None, 24)  # font for text rendering
         self.local_player = Player(*self.get_spawn_position())
         self.remote_players = {}
     
     def get_spawn_position(self):
-        pos = [1, 1]
         validPos = []
         for y in range(len(self.game_map)):
             for x in range(len(self.game_map[y])):
                 if self.game_map[y][x] == 0:
                     validPos.append([x, y])
                     print('X', end='')
-                else: print(self.game_map[y][x], end = '')
+                else:
+                    print(self.game_map[y][x], end ='')
             print()
         pos = validPos[random.randint(0, len(validPos) - 1)]
         print(pos)
+        pos[0] = 24
+        pos[1] = 24
         return float(pos[0]), float(pos[1])
 
     def display_map(self):
-        dt = self.clock.tick(60) / 1000  # Delta time (seconds)
-        
+        dt = self.clock.tick(60) / 1000
         self.local_player.handle_movement(self.game_map, dt)
 
         self.screen.fill((0, 0, 0))
@@ -45,25 +47,40 @@ class Game:
                         (x * self.cell_size, y * self.cell_size, self.cell_size, self.cell_size)
                     )
         
+        # Local player color: green if tagger, red if runner or tagged.
+        local_color = (0, 255, 0) if self.local_player.role == "tagger" else (255, 0, 0)
         pygame.draw.rect(
             self.screen,
-            (255, 0, 0),
+            local_color,
             (
                 int(self.local_player.x * self.cell_size) - int(0.5 * self.cell_size),
                 int(self.local_player.y * self.cell_size) - int(0.5 * self.cell_size),
                 self.cell_size, self.cell_size
             )
         )
-        for player in self.remote_players.values():
+        # If local player has been tagged, render "OUT" text.
+        if self.local_player.role == "tagged":
+            text = self.font.render("OUT", True, (255, 255, 0))
+            self.screen.blit(text, (int(self.local_player.x * self.cell_size), int(self.local_player.y * self.cell_size)))
+
+        # Draw remote players.
+        for client_id, player in self.remote_players.items():
+            if player.role == "tagger":
+                pcolor = (0, 255, 0)  # tagger is green
+            else:
+                pcolor = (0, 0, 255)  # runner is blue (or remains blue even if tagged)
             pygame.draw.rect(
                 self.screen,
-                (0, 0, 255),
+                pcolor,
                 (
                     int(player.x * self.cell_size) - int(0.5 * self.cell_size),
                     int(player.y * self.cell_size) - int(0.5 * self.cell_size),
                     self.cell_size, self.cell_size
                 )
             )
+            if player.role == "tagged":
+                text = self.font.render("OUT", True, (255, 255, 0))
+                self.screen.blit(text, (int(player.x * self.cell_size), int(player.y * self.cell_size)))
         
         pygame.display.flip()
 
@@ -92,7 +109,8 @@ class Game:
             'type': 'pos',
             'data': {
                 'x': self.local_player.x, 
-                'y': self.local_player.y
+                'y': self.local_player.y,
+                'role': self.local_player.role
             }
         }
         msg = json.dumps(data) + '\n'
@@ -104,7 +122,7 @@ class Game:
             while "\n" not in buffer:
                 part = conn.recv(1024).decode('utf-8')
                 if not part:
-                    return  # Connection closed
+                    return
                 buffer += part
             line, _ = buffer.split("\n", 1)
             state_data = json.loads(line)
@@ -115,20 +133,21 @@ class Game:
         clients_data = state_data.get('data', {}).get('clients', {})
         for client_id, pos in clients_data.items():
             if client_id not in self.remote_players:
-                self.remote_players[client_id] = Player(pos['x'], pos['y'])
+                self.remote_players[client_id] = Player(pos['x'], pos['y'], pos.get('role', 'runner'))
             else:
                 self.remote_players[client_id].x = pos['x']
                 self.remote_players[client_id].y = pos['y']
+                self.remote_players[client_id].role = pos.get('role', 'runner')
 
 class Player:
-    def __init__(self, x, y):
+    def __init__(self, x, y, role="runner"):
         self.x = x
         self.y = y
-        self.speed = 15  # Movement speed in cells per second
-        self.size = 1  # Collision box size factor
+        self.speed = 15
+        self.size = 1
+        self.role = role
     
     def can_move(self, grid, new_x, new_y):
-        """Check if the player can move to the new position without colliding."""
         left = int(new_x - self.size)
         right = int(new_x + self.size)
         top = int(new_y - self.size)
@@ -169,8 +188,7 @@ class Player:
             if not keys[pygame.K_w] and not keys[pygame.K_s]:
                 new_x += self.speed * dt
         
-        # Apply movement only if there's no collision
-        if self.can_move(grid, new_x, self.y):
-            self.x = new_x
-        if self.can_move(grid, self.x, new_y):
-            self.y = new_y
+        # if self.can_move(grid, new_x, self.y):
+        #     self.x = new_x
+        # if self.can_move(grid, self.x, new_y):
+        #     self.y = new_y

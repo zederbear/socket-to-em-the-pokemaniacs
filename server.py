@@ -17,7 +17,6 @@ def handle_client(conn, client_id, client_player):
             if not data:
                 break
             buffer += data
-            # Process complete messages delimited by newline.
             while "\n" in buffer:
                 line, buffer = buffer.split("\n", 1)
                 try:
@@ -26,6 +25,9 @@ def handle_client(conn, client_id, client_player):
                         pos = msg["data"]
                         client_player.x = pos["x"]
                         client_player.y = pos["y"]
+                        # Update role if sent by client.
+                        if "role" in pos:
+                            client_player.role = pos["role"]
                 except Exception as e:
                     print(f"Error processing message from client {client_id}: {e}")
     except Exception as e:
@@ -40,13 +42,12 @@ def handle_client(conn, client_id, client_player):
                     break
 
 def broadcast_state(game, server_player):
-    """Broadcast the current state (server and all clients) to every client."""
     with clients_lock:
         state = {
             "type": "state",
             "data": {
-                "server": {"x": server_player.x, "y": server_player.y},
-                "clients": {cid: {"x": pl.x, "y": pl.y} for cid, pl, _ in clients}
+                "server": {"x": server_player.x, "y": server_player.y, "role": server_player.role},
+                "clients": {str(cid): {"x": pl.x, "y": pl.y, "role": pl.role} for cid, pl, _ in clients}
             }
         }
         msg = (json.dumps(state) + "\n").encode()
@@ -55,6 +56,23 @@ def broadcast_state(game, server_player):
                 conn.sendall(msg)
             except Exception as e:
                 print("Error sending state to a client:", e)
+
+def check_tagging(game):
+    tagger = None
+    with clients_lock:
+        for cid, pl, _ in clients:
+            if pl.role == "tagger":
+                tagger = pl
+                break
+    if tagger:
+        # Check all clients.
+        with clients_lock:
+            for cid, pl, _ in clients:
+                if pl.role == "runner" and abs(tagger.x - pl.x) < 0.5 and abs(tagger.y - pl.y) < 0.5:
+                    pl.role = "tagged"
+        # Check the server's local player.
+        if game.local_player.role == "runner" and abs(tagger.x - game.local_player.x) < 0.5 and abs(tagger.y - game.local_player.y) < 0.5:
+            game.local_player.role = "tagged"
 
 def accept_clients(server_socket, game, used_spawns):
     """Continuously accepts new clients and assigns them a spawn."""
@@ -110,6 +128,7 @@ def main():
     while running:
         running = game.display_map()  # This handles movement, rendering, and events.
         broadcast_state(game, server_player)
+        check_tagging(game)
     
     pygame.quit()  # Cleanly exit pygame when done.
 
