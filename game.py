@@ -63,9 +63,10 @@ class Game:
             self.screen,
             local_color,
             (
-                int(self.local_player.x * self.cell_size) - int(0.5 * self.cell_size),
-                int(self.local_player.y * self.cell_size) - int(0.5 * self.cell_size),
-                self.cell_size, self.cell_size
+                round(self.local_player.x * self.cell_size),  # Remove the - int(0.5 * self.cell_size)
+                round(self.local_player.y * self.cell_size),  # Remove the - int(0.5 * self.cell_size)
+                self.cell_size,
+                self.cell_size
             )
         )
         # If local player has been tagged, render "OUT" text.
@@ -83,9 +84,10 @@ class Game:
                 self.screen,
                 pcolor,
                 (
-                    int(player.x * self.cell_size) - int(0.5 * self.cell_size),
-                    int(player.y * self.cell_size) - int(0.5 * self.cell_size),
-                    self.cell_size, self.cell_size
+                    round(player.x * self.cell_size),  # Remove the - int(0.5 * self.cell_size)
+                    round(player.y * self.cell_size),  # Remove the - int(0.5 * self.cell_size)
+                    self.cell_size,
+                    self.cell_size
                 )
             )
 
