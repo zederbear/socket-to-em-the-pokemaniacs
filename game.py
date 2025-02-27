@@ -286,28 +286,22 @@ class Player:
         logging.info(f"Player created: x={x}, y={y}, role={role}")
     
     def can_move(self, grid, new_x, new_y):
-        epsilon = 0.001  # Small value to expand the bounding box
-
-        left = int(new_x - self.size - epsilon)
-        right = int(new_x + self.size + epsilon)
-        top = int(new_y - self.size - epsilon)
-        bottom = int(new_y + self.size + epsilon)
+        """Check if the player can move to the new position without colliding."""
+        left = int(new_x - self.size)
+        right = int(new_x + self.size)
+        top = int(new_y - self.size)
+        bottom = int(new_y + self.size)
 
         if left < 0 or top < 0 or right >= len(grid[0]) or bottom >= len(grid):
             return False
-
-        # Check every cell within the player's bounding box
-        for y in range(top, bottom + 1):
-            for x in range(left, right + 1):
-                if grid[y][x] == 1:
-                    return False
-
+        if grid[top][left] == 1 or grid[top][right] == 1 or grid[bottom][left] == 1 or grid[bottom][right] == 1:
+            return False
         return True
     
     def handle_movement(self, grid, dt):
         keys = pygame.key.get_pressed()
         new_x, new_y = self.x, self.y
-        
+
         if keys[pygame.K_w]:
             if keys[pygame.K_a]:
                 new_x -= self.speed * dt * 0.7071
@@ -332,8 +326,10 @@ class Player:
         if keys[pygame.K_d]:
             if not keys[pygame.K_w] and not keys[pygame.K_s]:
                 new_x += self.speed * dt
-        
-        if self.can_move(grid, new_x, new_y):
+
+
+        # Apply movement only if there's no collision
+        if self.can_move(grid, new_x, self.y):
             self.x = new_x
+        if self.can_move(grid, self.x, new_y):
             self.y = new_y
-            logging.debug(f"Player moved to x={self.x}, y={self.y} (dt={dt})")
