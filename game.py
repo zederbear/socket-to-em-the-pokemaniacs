@@ -63,8 +63,8 @@ class Game:
             self.screen,
             local_color,
             (
-                round(self.local_player.x * self.cell_size),  # Remove the - int(0.5 * self.cell_size)
-                round(self.local_player.y * self.cell_size),  # Remove the - int(0.5 * self.cell_size)
+                round(self.local_player.x * self.cell_size) - int(0.5 * self.cell_size),  # Remove the - int(0.5 * self.cell_size)
+                round(self.local_player.y * self.cell_size) - int(0.5 * self.cell_size),  # Remove the - int(0.5 * self.cell_size)
                 self.cell_size,
                 self.cell_size
             )
