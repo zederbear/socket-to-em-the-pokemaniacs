@@ -89,7 +89,7 @@ This project is a multiplayer tag game implemented in Python using `pygame` for 
     python test.py
     ```
 
-## Contributions
+## Contributors
 1. Cameron Byliu
 
 2. Zedrik Hoover
