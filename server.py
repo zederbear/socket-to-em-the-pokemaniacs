@@ -59,8 +59,8 @@ def broadcast_state(game, server_player):
                 "clients": {
                     str(cid): {
                         "id": str(cid),
-                        "x": pl.x,
-                        "y": pl.y,
+                        "x": pl.x - 0.4,
+                        "y": pl.y - 0.4,
                         "role": pl.role
                     } for cid, pl, _ in clients
                 }
