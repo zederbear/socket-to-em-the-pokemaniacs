@@ -4,7 +4,7 @@ import threading
 import random
 import pygame
 from game import Game, Player
-from map import generate_map 
+from map import generate_map  # noqa: F401
 
 clients = []
 clients_lock = threading.Lock()
