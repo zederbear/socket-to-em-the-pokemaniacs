@@ -63,9 +63,10 @@ class Game:
             self.screen,
             local_color,
             (
-                int(self.local_player.x * self.cell_size) - int(0.5 * self.cell_size),
-                int(self.local_player.y * self.cell_size) - int(0.5 * self.cell_size),
-                self.cell_size, self.cell_size
+                round(self.local_player.x * self.cell_size) - int(0.5 * self.cell_size),  # Remove the - int(0.5 * self.cell_size)
+                round(self.local_player.y * self.cell_size) - int(0.5 * self.cell_size),  # Remove the - int(0.5 * self.cell_size)
+                self.cell_size,
+                self.cell_size
             )
         )
         # If local player has been tagged, render "OUT" text.
@@ -83,9 +84,10 @@ class Game:
                 self.screen,
                 pcolor,
                 (
-                    int(player.x * self.cell_size) - int(0.5 * self.cell_size),
-                    int(player.y * self.cell_size) - int(0.5 * self.cell_size),
-                    self.cell_size, self.cell_size
+                    round(player.x * self.cell_size),  # Remove the - int(0.5 * self.cell_size)
+                    round(player.y * self.cell_size),  # Remove the - int(0.5 * self.cell_size)
+                    self.cell_size,
+                    self.cell_size
                 )
             )
 
@@ -188,126 +190,120 @@ class Game:
                     
 
 
-    def handle_movement(self, player, keys):
-        # Store the previous position for collision checking
-        prev_x = player.x
-        prev_y = player.y
+    # def handle_movement(self, player, keys):
+    #     # Store the previous position for collision checking
+    #     prev_x = player.x
+    #     prev_y = player.y
 
-        # Get movement input
-        dx = 0
-        dy = 0
-        if keys[pygame.K_LEFT] or keys[pygame.K_a]:
-            dx -= self.PLAYER_SPEED
-        if keys[pygame.K_RIGHT] or keys[pygame.K_d]:
-            dx += self.PLAYER_SPEED
-        if keys[pygame.K_UP] or keys[pygame.K_w]:
-            dy -= self.PLAYER_SPEED
-        if keys[pygame.K_DOWN] or keys[pygame.K_s]:
-            dy += self.PLAYER_SPEED
+    #     # Get movement input
+    #     dx = 0
+    #     dy = 0
+    #     if keys[pygame.K_LEFT] or keys[pygame.K_a]:
+    #         dx -= self.PLAYER_SPEED
+    #     if keys[pygame.K_RIGHT] or keys[pygame.K_d]:
+    #         dx += self.PLAYER_SPEED
+    #     if keys[pygame.K_UP] or keys[pygame.K_w]:
+    #         dy -= self.PLAYER_SPEED
+    #     if keys[pygame.K_DOWN] or keys[pygame.K_s]:
+    #         dy += self.PLAYER_SPEED
 
-        # Update position
-        new_x = player.x + dx
-        new_y = player.y + dy
+    #     # Update position
+    #     new_x = player.x + dx
+    #     new_y = player.y + dy
 
-        # Check for collisions with walls
-        player_radius = 0.4  # Adjust this value to change collision boundary
+    #     # Check for collisions with walls
+    #     player_radius = 0.4  # Adjust this value to change collision boundary
         
-        # Get the grid cells that the player might collide with
-        left = int(new_x - player_radius)
-        right = int(new_x + player_radius)
-        top = int(new_y - player_radius)
-        bottom = int(new_y + player_radius)
+    #     # Get the grid cells that the player might collide with
+    #     left = int(new_x - player_radius)
+    #     right = int(new_x + player_radius)
+    #     top = int(new_y - player_radius)
+    #     bottom = int(new_y + player_radius)
 
-        # Check each potential collision cell
-        collision = False
-        for check_y in range(top, bottom + 1):
-            for check_x in range(left, right + 1):
-                if (0 <= check_y < len(self.game_map) and 
-                    0 <= check_x < len(self.game_map[0]) and 
-                    self.game_map[check_y][check_x] == 1):
+    #     # Check each potential collision cell
+    #     collision = False
+    #     for check_y in range(top, bottom + 1):
+    #         for check_x in range(left, right + 1):
+    #             if (0 <= check_y < len(self.game_map) and 
+    #                 0 <= check_x < len(self.game_map[0]) and 
+    #                 self.game_map[check_y][check_x] == 1):
                     
-                    # Calculate the closest point on the wall to the player
-                    closest_x = max(check_x, min(new_x, check_x + 1))
-                    closest_y = max(check_y, min(new_y, check_y + 1))
+    #                 # Calculate the closest point on the wall to the player
+    #                 closest_x = max(check_x, min(new_x, check_x + 1))
+    #                 closest_y = max(check_y, min(new_y, check_y + 1))
                     
-                    # Calculate distance from closest point
-                    distance = ((new_x - closest_x) ** 2 + (new_y - closest_y) ** 2) ** 0.5
+    #                 # Calculate distance from closest point
+    #                 distance = ((new_x - closest_x) ** 2 + (new_y - closest_y) ** 2) ** 0.5
                     
-                    if distance < player_radius:
-                        collision = True
-                        break
-            if collision:
-                break
+    #                 if distance < player_radius:
+    #                     collision = True
+    #                     break
+    #         if collision:
+    #             break
 
-        # If there's a collision, keep the old position on the colliding axis
-        if collision:
-            # Try moving on X axis only
-            if self.check_collision(player.x + dx, player.y, player_radius):
-                new_x = player.x
+    #     # If there's a collision, keep the old position on the colliding axis
+    #     if collision:
+    #         # Try moving on X axis only
+    #         if self.check_collision(player.x + dx, player.y, player_radius):
+    #             new_x = player.x
             
-            # Try moving on Y axis only
-            if self.check_collision(new_x, player.y + dy, player_radius):
-                new_y = player.y
+    #         # Try moving on Y axis only
+    #         if self.check_collision(new_x, player.y + dy, player_radius):
+    #             new_y = player.y
 
-        # Update the player position
-        player.x = new_x
-        player.y = new_y
-        logging.debug(f"Player moved to x={player.x}, y={player.y}")
+    #     # Update the player position
+    #     player.x = new_x
+    #     player.y = new_y
+    #     logging.debug(f"Player moved to x={player.x}, y={player.y}")
 
-    def check_collision(self, x, y, radius):
-        """Helper method to check if a position collides with walls"""
-        left = int(x - radius)
-        right = int(x + radius)
-        top = int(y - radius)
-        bottom = int(y + radius)
+    # def check_collision(self, x, y, radius):
+    #     """Helper method to check if a position collides with walls"""
+    #     left = int(x - radius)
+    #     right = int(x + radius)
+    #     top = int(y - radius)
+    #     bottom = int(y + radius)
 
-        for check_y in range(top, bottom + 1):
-            for check_x in range(left, right + 1):
-                if (0 <= check_y < len(self.game_map) and 
-                    0 <= check_x < len(self.game_map[0]) and 
-                    self.game_map[check_y][check_x] == 1):
+    #     for check_y in range(top, bottom + 1):
+    #         for check_x in range(left, right + 1):
+    #             if (0 <= check_y < len(self.game_map) and 
+    #                 0 <= check_x < len(self.game_map[0]) and 
+    #                 self.game_map[check_y][check_x] == 1):
                     
-                    closest_x = max(check_x, min(x, check_x + 1))
-                    closest_y = max(check_y, min(y, check_y + 1))
+    #                 closest_x = max(check_x, min(x, check_x + 1))
+    #                 closest_y = max(check_y, min(y, check_y + 1))
                     
-                    distance = ((x - closest_x) ** 2 + (y - closest_y) ** 2) ** 0.5
+    #                 distance = ((x - closest_x) ** 2 + (y - closest_y) ** 2) ** 0.5
                     
-                    if distance < radius:
-                        return True
-        return False
+    #                 if distance < radius:
+    #                     return True
+    #     return False
 
 class Player:
     def __init__(self, x, y, role="runner"):
         self.x = x
         self.y = y
         self.speed = 15
-        self.size = 1
+        self.size = 0.5
         self.role = role
         logging.info(f"Player created: x={x}, y={y}, role={role}")
     
     def can_move(self, grid, new_x, new_y):
-        epsilon = 0.001  # Small value to expand the bounding box
-
-        left = int(new_x - self.size - epsilon)
-        right = int(new_x + self.size + epsilon)
-        top = int(new_y - self.size - epsilon)
-        bottom = int(new_y + self.size + epsilon)
+        """Check if the player can move to the new position without colliding."""
+        left = int(new_x - self.size)
+        right = int(new_x + self.size)
+        top = int(new_y - self.size)
+        bottom = int(new_y + self.size)
 
         if left < 0 or top < 0 or right >= len(grid[0]) or bottom >= len(grid):
             return False
-
-        # Check every cell within the player's bounding box
-        for y in range(top, bottom + 1):
-            for x in range(left, right + 1):
-                if grid[y][x] == 1:
-                    return False
-
+        if grid[top][left] == 1 or grid[top][right] == 1 or grid[bottom][left] == 1 or grid[bottom][right] == 1:
+            return False
         return True
     
     def handle_movement(self, grid, dt):
         keys = pygame.key.get_pressed()
         new_x, new_y = self.x, self.y
-        
+
         if keys[pygame.K_w]:
             if keys[pygame.K_a]:
                 new_x -= self.speed * dt * 0.7071
@@ -332,8 +328,10 @@ class Player:
         if keys[pygame.K_d]:
             if not keys[pygame.K_w] and not keys[pygame.K_s]:
                 new_x += self.speed * dt
-        
-        if self.can_move(grid, new_x, new_y):
+
+
+        # Apply movement only if there's no collision
+        if self.can_move(grid, new_x, self.y):
             self.x = new_x
+        if self.can_move(grid, self.x, new_y):
             self.y = new_y
-            logging.debug(f"Player moved to x={self.x}, y={self.y} (dt={dt})")
