@@ -13,80 +13,277 @@ class Game:
         self.screen = pygame.display.set_mode((screen_size, screen_size))
         pygame.display.set_caption("Multiplayer tag")
         self.clock = pygame.time.Clock()
+        self.font = pygame.font.SysFont(None, 24)  # font for text rendering
         self.local_player = Player(*self.get_spawn_position())
-        self.remote_player = Player(*self.get_spawn_position())
+        self.remote_players = {}
+        self.client_id = None
     
     def get_spawn_position(self):
-        x, y = 1, 1
-        while self.game_map[y][x] == 1:
-            x = random.randint(1, self.map_size - 2)
-            y = random.randint(1, self.map_size - 2)
-        return float(x), float(y)
+        validPos = []
+        for y in range(len(self.game_map)):
+            for x in range(len(self.game_map[y])):
+                if self.game_map[y][x] == 0:
+                    validPos.append([x, y])
+                    print('X', end='')
+                else:
+                    print(self.game_map[y][x], end ='')
+            print()
+        pos = validPos[random.randint(0, len(validPos) - 1)]
+        print(pos)
+        pos[0] = 25
+        pos[1] = 25
+        return float(pos[0]), float(pos[1])
 
     def display_map(self):
-        dt = self.clock.tick(60) / 1000  # Delta time (seconds)
-        
+        dt = self.clock.tick(60) / 1000
         self.local_player.handle_movement(self.game_map, dt)
 
         self.screen.fill((0, 0, 0))
         for y, row in enumerate(self.game_map):
             for x, cell in enumerate(row):
                 if cell == 1:
-                    pygame.draw.rect(self.screen, (255, 255, 255),
-                                      (x * self.cell_size, y * self.cell_size, self.cell_size, self.cell_size))
+                    pygame.draw.rect(
+                        self.screen,
+                        (255, 255, 255),
+                        (x * self.cell_size, y * self.cell_size, self.cell_size, self.cell_size)
+                    )
         
-        pygame.draw.rect(self.screen, (255, 0, 0),
-                            (int(self.local_player.x * self.cell_size) - int(0.5 * self.cell_size),
-                            int(self.local_player.y * self.cell_size) - int(0.5 * self.cell_size),
-                            self.cell_size, self.cell_size))
-        pygame.draw.rect(self.screen, (0, 0, 255),
-                            (int(self.remote_player.x * self.cell_size) - int(0.5 * self.cell_size),
-                            int(self.remote_player.y * self.cell_size) - int(0.5 * self.cell_size),
-                            self.cell_size, self.cell_size))
+        # Local player color: green if tagger, red if runner or tagged.
+        local_color = (0, 255, 0) if self.local_player.role == "tagger" else (255, 0, 0)
+        pygame.draw.rect(
+            self.screen,
+            local_color,
+            (
+                int(self.local_player.x * self.cell_size) - int(0.5 * self.cell_size),
+                int(self.local_player.y * self.cell_size) - int(0.5 * self.cell_size),
+                self.cell_size, self.cell_size
+            )
+        )
+        # If local player has been tagged, render "OUT" text.
+        if self.local_player.role == "tagged":
+            text = self.font.render("OUT", True, (255, 255, 0))
+            self.screen.blit(text, (int(self.local_player.x * self.cell_size), int(self.local_player.y * self.cell_size)))
+        
+        # Draw remote players.
+        for client_id, player in self.remote_players.items():
+            if player.role == "tagger":
+                pcolor = (0, 255, 0)  # Tagger is green
+            else:
+                pcolor = (0, 0, 255)  # Runner is blue
+            pygame.draw.rect(
+                self.screen,
+                pcolor,
+                (
+                    int(player.x * self.cell_size) - int(0.5 * self.cell_size),
+                    int(player.y * self.cell_size) - int(0.5 * self.cell_size),
+                    self.cell_size, self.cell_size
+                )
+            )
+
+            if player.role == "tagged":
+                text = self.font.render("OUT", True, (255, 255, 0))
+                self.screen.blit(text, (int(player.x * self.cell_size), int(player.y * self.cell_size)))
+        
+        # **NEW:** Render tagger text in green at the top left.
+        if self.local_player.role == "tagger":
+            tag_text = self.font.render("You are the tagger", True, (0, 255, 0))
+            self.screen.blit(tag_text, (10, 10))
+            
         pygame.display.flip()
 
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 return False
         return True
+
     
     def send_map(self, conn):
         data = json.dumps(self.game_map)
         conn.sendall(data.encode('utf-8'))
 
-    def receive_map(self, conn):
-        data = conn.recv(8192).decode('utf-8')
-        self.game_map = json.loads(data)
+    def receive_map(self, conn, buffer):
+        try:
+            while "\n" not in buffer:
+                part = conn.recv(1024).decode('utf-8')
+                if not part:
+                    return buffer  # Connection closed; return current buffer.
+                buffer += part
+            line, buffer = buffer.split("\n", 1)
+            msg = json.loads(line)
+            if msg.get("type") == "map":
+                self.game_map = msg["data"]
+            else:
+                self.game_map = msg
+            return buffer  # Return the updated buffer.
+        except Exception as e:
+            print("Error receiving map:", e)
+            return buffer
+
     
     def send_player_data(self, conn):
-        data = {'x': self.local_player.x, 'y': self.local_player.y}
-        msg = json.dumps(data)
+        data = {
+            'type': 'pos',
+            'data': {
+                'x': self.local_player.x, 
+                'y': self.local_player.y
+            }
+        }
+        msg = json.dumps(data) + '\n'
         conn.sendall(msg.encode('utf-8'))
     
-    def receive_player_data(self, conn):
-        data = conn.recv(1024).decode('utf-8')
-        player_data = json.loads(data)
-        self.remote_player.x = player_data['x']
-        self.remote_player.y = player_data['y']
+    def receive_state(self, conn):
+        buffer = ""
+        try:
+            while "\n" not in buffer:
+                part = conn.recv(1024).decode('utf-8')
+                if not part:
+                    return
+                buffer += part
+            line, rest = buffer.split("\n", 1)
+            try:
+                state_data = json.loads(line)
+            except Exception as e:
+                print("Error receiving state:", e)
+                print("State message:", line)
+                return
+        except Exception as e:
+            print("Error receiving state (outer):", e)
+            return
+
+        # Debug print the full state message
+
+        # Update the local player's role even if it hasn't changed.
+        clients_data = state_data.get('data', {}).get('clients', {})
+        if self.client_id in clients_data:
+            pos = clients_data[self.client_id]
+            new_role = pos.get('role', self.local_player.role)
+            self.local_player.role = new_role
+
+        # Process remote clients.
+        for client_id, pos in clients_data.items():
+            if client_id != self.client_id:  # Exclude local player
+                if client_id not in self.remote_players:
+                    self.remote_players[client_id] = Player(pos['x'], pos['y'], pos.get('role', 'runner'))
+                else:
+                    self.remote_players[client_id].x = pos['x']
+                    self.remote_players[client_id].y = pos['y']
+                    self.remote_players[client_id].role = pos.get('role', 'runner')
+                    # Optional: print each remote client's role for debugging.
+                    
+
+
+    def handle_movement(self, player, keys):
+        # Store the previous position for collision checking
+        prev_x = player.x
+        prev_y = player.y
+
+        # Get movement input
+        dx = 0
+        dy = 0
+        if keys[pygame.K_LEFT] or keys[pygame.K_a]:
+            dx -= self.PLAYER_SPEED
+        if keys[pygame.K_RIGHT] or keys[pygame.K_d]:
+            dx += self.PLAYER_SPEED
+        if keys[pygame.K_UP] or keys[pygame.K_w]:
+            dy -= self.PLAYER_SPEED
+        if keys[pygame.K_DOWN] or keys[pygame.K_s]:
+            dy += self.PLAYER_SPEED
+
+        # Update position
+        new_x = player.x + dx
+        new_y = player.y + dy
+
+        # Check for collisions with walls
+        player_radius = 0.4  # Adjust this value to change collision boundary
+        
+        # Get the grid cells that the player might collide with
+        left = int(new_x - player_radius)
+        right = int(new_x + player_radius)
+        top = int(new_y - player_radius)
+        bottom = int(new_y + player_radius)
+
+        # Check each potential collision cell
+        collision = False
+        for check_y in range(top, bottom + 1):
+            for check_x in range(left, right + 1):
+                if (0 <= check_y < len(self.game_map) and 
+                    0 <= check_x < len(self.game_map[0]) and 
+                    self.game_map[check_y][check_x] == 1):
+                    
+                    # Calculate the closest point on the wall to the player
+                    closest_x = max(check_x, min(new_x, check_x + 1))
+                    closest_y = max(check_y, min(new_y, check_y + 1))
+                    
+                    # Calculate distance from closest point
+                    distance = ((new_x - closest_x) ** 2 + (new_y - closest_y) ** 2) ** 0.5
+                    
+                    if distance < player_radius:
+                        collision = True
+                        break
+            if collision:
+                break
+
+        # If there's a collision, keep the old position on the colliding axis
+        if collision:
+            # Try moving on X axis only
+            if self.check_collision(player.x + dx, player.y, player_radius):
+                new_x = player.x
+            
+            # Try moving on Y axis only
+            if self.check_collision(new_x, player.y + dy, player_radius):
+                new_y = player.y
+
+        # Update the player position
+        player.x = new_x
+        player.y = new_y
+
+    def check_collision(self, x, y, radius):
+        """Helper method to check if a position collides with walls"""
+        left = int(x - radius)
+        right = int(x + radius)
+        top = int(y - radius)
+        bottom = int(y + radius)
+
+        for check_y in range(top, bottom + 1):
+            for check_x in range(left, right + 1):
+                if (0 <= check_y < len(self.game_map) and 
+                    0 <= check_x < len(self.game_map[0]) and 
+                    self.game_map[check_y][check_x] == 1):
+                    
+                    closest_x = max(check_x, min(x, check_x + 1))
+                    closest_y = max(check_y, min(y, check_y + 1))
+                    
+                    distance = ((x - closest_x) ** 2 + (y - closest_y) ** 2) ** 0.5
+                    
+                    if distance < radius:
+                        return True
+        return False
 
 class Player:
-    def __init__(self, x, y):
+    def __init__(self, x, y, role="runner"):
         self.x = x
         self.y = y
-        self.speed = 15  # Movement speed in cells per second
-        self.size = 0.4  # Collision box size factor
+        self.speed = 15
+        self.size = 1
+        self.role = role
     
     def can_move(self, grid, new_x, new_y):
-        """Check if the player can move to the new position without colliding."""
-        left = int(new_x - self.size)
-        right = int(new_x + self.size)
-        top = int(new_y - self.size)
-        bottom = int(new_y + self.size)
-        
+        epsilon = 0.001  # Small value to expand the bounding box
+
+        left = int(new_x - self.size - epsilon)
+        right = int(new_x + self.size + epsilon)
+        top = int(new_y - self.size - epsilon)
+        bottom = int(new_y + self.size + epsilon)
+
         if left < 0 or top < 0 or right >= len(grid[0]) or bottom >= len(grid):
             return False
-        if grid[top][left] == 1 or grid[top][right] == 1 or grid[bottom][left] == 1 or grid[bottom][right] == 1:
-            return False
+
+        # Check every cell within the player's bounding box
+        for y in range(top, bottom + 1):
+            for x in range(left, right + 1):
+                if grid[y][x] == 1:
+                    return False
+
         return True
     
     def handle_movement(self, grid, dt):
@@ -118,22 +315,6 @@ class Player:
             if not keys[pygame.K_w] and not keys[pygame.K_s]:
                 new_x += self.speed * dt
         
-        
-        # Apply movement only if there's no collision
-        if self.can_move(grid, new_x, self.y):
+        if self.can_move(grid, new_x, new_y):
             self.x = new_x
-        if self.can_move(grid, self.x, new_y):
             self.y = new_y
-
-# def map_display(map_size):
-#     game_map = generate_map(map_size)
-#     players = []
-#     for _ in range(1):  # Change this to add multiple players
-#         player_start = (1, 1)
-#         while game_map[player_start[1]][player_start[0]] == 1:
-#             player_start = (random.randint(1, map_size - 2), random.randint(1, map_size - 2))
-#         players.append(Player(float(player_start[0]), float(player_start[1])))
-    
-#     Game.render_map(game_map, players, 10)
-
-# map_display(51)

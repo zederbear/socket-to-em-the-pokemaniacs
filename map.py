@@ -8,6 +8,9 @@ def carve_room(grid, x, y, width, height):
     for i in range(y, y + height):
         for j in range(x, x + width):
             grid[i][j] = 0
+    for i in range(-2, 3):
+        for j in range(-2, 3):
+            grid[25 + i][25 + j] = 0
 
 def carve_hallway(grid, x1, y1, x2, y2, hallway_cells, connect_prob=0.5):
     hallway_width = 3  # Adjust width of hallways
@@ -67,11 +70,21 @@ def generate_map(size):
     for i in range(len(rooms) - 1):
         carve_hallway(grid, *rooms[i], *rooms[i + 1], hallway_cells, connect_prob)
 
+    x1, y1 = 25, 25
+    x2, y2 = 1, 25
+    hallway_width = 3
+    for x in range(x2, x1 + 25):
+        for i in range(hallway_width):
+            y = y1 - hallway_width // 2 + i
+            if 0 <= y < len(grid):
+                grid[y][x] = 0
+
     return grid
 
 def print_map(grid):
+    grid[25][25] = 6
     for row in grid:
-        print("".join("#" if cell == 1 else "." for cell in row))
+        print("".join("#" if cell == 1 else "/" if cell == 5 else "|" if cell == 6 else "-" if cell == 7 else "." for cell in row))
 
 def get_map_data(grid):
     return grid
