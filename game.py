@@ -95,10 +95,6 @@ class Game:
                 text = self.font.render("OUT", True, (255, 255, 0))
                 self.screen.blit(text, (int(player.x * self.cell_size), int(player.y * self.cell_size)))
         
-        # **NEW:** Render tagger text in green at the top left.
-        if self.local_player.role == "tagger":
-            tag_text = self.font.render("You are the tagger", True, (0, 255, 0))
-            self.screen.blit(tag_text, (10, 10))
             
         pygame.display.flip()
 
