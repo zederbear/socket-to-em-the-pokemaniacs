@@ -34,12 +34,12 @@ class Game:
                     validPos.append([x, y])
                     print('X', end='')
                 else:
-                    print(self.game_map[y][x], end ='')
+                    logging.debug(self.game_map[y][x], end ='')
             print()
         pos = validPos[random.randint(0, len(validPos) - 1)]
-        print(pos)
         pos[0] = 25
         pos[1] = 25
+        logging.info(pos)
         logging.debug(f"Spawn position: {pos}")
         return float(pos[0]), float(pos[1])
 
