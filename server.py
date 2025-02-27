@@ -31,9 +31,6 @@ def handle_client(conn, client_id, client_player):
                         pos = msg["data"]
                         client_player.x = pos["x"]
                         client_player.y = pos["y"]
-                        # Update role if sent by client.
-                        if "role" in pos:
-                            client_player.role = pos["role"]
                 except Exception as e:
                     print(f"Error processing message from client {client_id}: {e}")
     except Exception as e:
@@ -52,8 +49,20 @@ def broadcast_state(game, server_player):
         state = {
             "type": "state",
             "data": {
-                "server": {"x": server_player.x, "y": server_player.y, "role": server_player.role},
-                "clients": {str(cid): {"x": pl.x, "y": pl.y, "role": pl.role} for cid, pl, _ in clients}
+                "server": {
+                    "id": "server",
+                    "x": server_player.x,
+                    "y": server_player.y,
+                    "role": server_player.role
+                },
+                "clients": {
+                    str(cid): {
+                        "id": str(cid),
+                        "x": pl.x,
+                        "y": pl.y,
+                        "role": pl.role
+                    } for cid, pl, _ in clients
+                }
             }
         }
         msg = (json.dumps(state) + "\n").encode()
@@ -62,6 +71,9 @@ def broadcast_state(game, server_player):
                 conn.sendall(msg)
             except Exception as e:
                 print("Error sending state to a client:", e)
+
+
+
 
 def check_tagging(game):
     tagger = None
@@ -83,6 +95,8 @@ def check_tagging(game):
 def accept_clients(server_socket, game, used_spawns):
     """Continuously accepts new clients and assigns them a spawn."""
     client_id_counter = 1
+    tagger_assigned = False  # Flag to ensure only one tagger
+
     while True:
         conn, addr = server_socket.accept()
         print(f"Client {client_id_counter} connected: {addr}")
@@ -95,13 +109,28 @@ def accept_clients(server_socket, game, used_spawns):
             conn.close()
             continue
 
+        # Send the client ID
+        id_msg = json.dumps({"type": "client_id", "data": client_id_counter}) + "\n"
+        try:
+            conn.sendall(id_msg.encode())
+        except Exception as e:
+            print("Error sending client ID:", e)
+            conn.close()
+            continue
+
+        # Find a valid spawn position.
         # Find a valid spawn position.
         while True:
             x = random.randint(0, len(game.game_map[0]) - 1)
             y = random.randint(0, len(game.game_map) - 1)
             if is_valid_spawn(game.game_map, x, y):
-                client_player = Player(float(x), float(y))
+                if client_id_counter == 2 and not tagger_assigned:  # Second client is tagger
+                    client_player = Player(float(x), float(y), role="tagger")
+                    tagger_assigned = True
+                else:
+                    client_player = Player(float(x), float(y), role="runner")
                 break
+
 
         with clients_lock:
             clients.append((client_id_counter, client_player, conn))
@@ -127,6 +156,9 @@ def main():
     running = True
     while running:
         running = game.display_map()  # This handles movement, rendering, and events.
+        server_player.x = game.local_player.x
+        server_player.y = game.local_player.y
+        server_player.role = game.local_player.role
         broadcast_state(game, server_player)
         check_tagging(game)
     

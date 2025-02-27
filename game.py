@@ -16,6 +16,7 @@ class Game:
         self.font = pygame.font.SysFont(None, 24)  # font for text rendering
         self.local_player = Player(*self.get_spawn_position())
         self.remote_players = {}
+        self.client_id = None
     
     def get_spawn_position(self):
         validPos = []
@@ -62,13 +63,13 @@ class Game:
         if self.local_player.role == "tagged":
             text = self.font.render("OUT", True, (255, 255, 0))
             self.screen.blit(text, (int(self.local_player.x * self.cell_size), int(self.local_player.y * self.cell_size)))
-
+        
         # Draw remote players.
         for client_id, player in self.remote_players.items():
             if player.role == "tagger":
-                pcolor = (0, 255, 0)  # tagger is green
+                pcolor = (0, 255, 0)  # Tagger is green
             else:
-                pcolor = (0, 0, 255)  # runner is blue (or remains blue even if tagged)
+                pcolor = (0, 0, 255)  # Runner is blue
             pygame.draw.rect(
                 self.screen,
                 pcolor,
@@ -78,39 +79,53 @@ class Game:
                     self.cell_size, self.cell_size
                 )
             )
+
             if player.role == "tagged":
                 text = self.font.render("OUT", True, (255, 255, 0))
                 self.screen.blit(text, (int(player.x * self.cell_size), int(player.y * self.cell_size)))
         
+        # **NEW:** Render tagger text in green at the top left.
+        if self.local_player.role == "tagger":
+            tag_text = self.font.render("You are the tagger", True, (0, 255, 0))
+            self.screen.blit(tag_text, (10, 10))
+            
         pygame.display.flip()
 
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 return False
         return True
+
     
     def send_map(self, conn):
         data = json.dumps(self.game_map)
         conn.sendall(data.encode('utf-8'))
 
-    def receive_map(self, conn):
-        buffer = ""
-        while "\n" not in buffer:
-            buffer += conn.recv(1024).decode('utf-8')
-        line, _ = buffer.split("\n", 1)
-        msg = json.loads(line)
-        if msg.get("type") == "map":
-            self.game_map = msg["data"]
-        else:
-            self.game_map = msg
+    def receive_map(self, conn, buffer):
+        try:
+            while "\n" not in buffer:
+                part = conn.recv(1024).decode('utf-8')
+                if not part:
+                    return buffer  # Connection closed; return current buffer.
+                buffer += part
+            line, buffer = buffer.split("\n", 1)
+            msg = json.loads(line)
+            if msg.get("type") == "map":
+                self.game_map = msg["data"]
+            else:
+                self.game_map = msg
+            return buffer  # Return the updated buffer.
+        except Exception as e:
+            print("Error receiving map:", e)
+            return buffer
+
     
     def send_player_data(self, conn):
         data = {
             'type': 'pos',
             'data': {
                 'x': self.local_player.x, 
-                'y': self.local_player.y,
-                'role': self.local_player.role
+                'y': self.local_player.y
             }
         }
         msg = json.dumps(data) + '\n'
@@ -124,20 +139,38 @@ class Game:
                 if not part:
                     return
                 buffer += part
-            line, _ = buffer.split("\n", 1)
-            state_data = json.loads(line)
+            line, rest = buffer.split("\n", 1)
+            try:
+                state_data = json.loads(line)
+            except Exception as e:
+                print("Error receiving state:", e)
+                print("State message:", line)
+                return
         except Exception as e:
-            print("Error receiving state:", e)
+            print("Error receiving state (outer):", e)
             return
 
+        # Debug print the full state message
+
+        # Update the local player's role even if it hasn't changed.
         clients_data = state_data.get('data', {}).get('clients', {})
+        if self.client_id in clients_data:
+            pos = clients_data[self.client_id]
+            new_role = pos.get('role', self.local_player.role)
+            self.local_player.role = new_role
+
+        # Process remote clients.
         for client_id, pos in clients_data.items():
-            if client_id not in self.remote_players:
-                self.remote_players[client_id] = Player(pos['x'], pos['y'], pos.get('role', 'runner'))
-            else:
-                self.remote_players[client_id].x = pos['x']
-                self.remote_players[client_id].y = pos['y']
-                self.remote_players[client_id].role = pos.get('role', 'runner')
+            if client_id != self.client_id:  # Exclude local player
+                if client_id not in self.remote_players:
+                    self.remote_players[client_id] = Player(pos['x'], pos['y'], pos.get('role', 'runner'))
+                else:
+                    self.remote_players[client_id].x = pos['x']
+                    self.remote_players[client_id].y = pos['y']
+                    self.remote_players[client_id].role = pos.get('role', 'runner')
+                    # Optional: print each remote client's role for debugging.
+                    
+
 
     def handle_movement(self, player, keys):
         # Store the previous position for collision checking
