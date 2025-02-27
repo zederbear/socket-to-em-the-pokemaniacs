@@ -283,7 +283,7 @@ class Player:
         self.x = x
         self.y = y
         self.speed = 15
-        self.size = 1
+        self.size = 0.5
         self.role = role
         logging.info(f"Player created: x={x}, y={y}, role={role}")
     
