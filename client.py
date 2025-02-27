@@ -1,6 +1,13 @@
 import socket
 import json
 from game import Game
+import logging
+
+logging.basicConfig(
+    level=logging.DEBUG,
+    format='%(asctime)s - %(levelname)s - %(message)s',
+    filename='client.log'
+    )
 
 def receive_message(client_socket, buffer):
     while "\n" not in buffer:

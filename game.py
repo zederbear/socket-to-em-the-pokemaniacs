@@ -1,7 +1,14 @@
 import pygame
 import random
 import json
+import logging
 from map import generate_map
+
+logging.basicConfig(
+    level=logging.DEBUG,
+    format='%(asctime)s - %(levelname)s - %(message)s',
+    filename='game.log'
+    )
 
 class Game:
     def __init__(self, map_size=51):
@@ -17,6 +24,7 @@ class Game:
         self.local_player = Player(*self.get_spawn_position())
         self.remote_players = {}
         self.client_id = None
+        logging.info(f"Game initialized with map size: {map_size}")
     
     def get_spawn_position(self):
         validPos = []
@@ -32,6 +40,7 @@ class Game:
         print(pos)
         pos[0] = 25
         pos[1] = 25
+        logging.debug(f"Spawn position: {pos}")
         return float(pos[0]), float(pos[1])
 
     def display_map(self):
@@ -93,6 +102,7 @@ class Game:
 
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
+                logging.info("Player quit the game.")
                 return False
         return True
 
@@ -100,6 +110,7 @@ class Game:
     def send_map(self, conn):
         data = json.dumps(self.game_map)
         conn.sendall(data.encode('utf-8'))
+        logging.debug("Map data sent to client.")
 
     def receive_map(self, conn, buffer):
         try:
@@ -112,11 +123,13 @@ class Game:
             msg = json.loads(line)
             if msg.get("type") == "map":
                 self.game_map = msg["data"]
+                logging.debug("Map data received from client.")
             else:
                 self.game_map = msg
+                logging.debug("Map data received from client (no type).")
             return buffer  # Return the updated buffer.
         except Exception as e:
-            print("Error receiving map:", e)
+            logging.error(f"Error receiving map: {e}")
             return buffer
 
     
@@ -130,6 +143,7 @@ class Game:
         }
         msg = json.dumps(data) + '\n'
         conn.sendall(msg.encode('utf-8'))
+        logging.debug(f"Player data sent: x={self.local_player.x}, y={self.local_player.y}")
     
     def receive_state(self, conn):
         buffer = ""
@@ -143,11 +157,10 @@ class Game:
             try:
                 state_data = json.loads(line)
             except Exception as e:
-                print("Error receiving state:", e)
-                print("State message:", line)
+                logging.error(f"Error receiving state: {e}, State message: {line}")
                 return
         except Exception as e:
-            print("Error receiving state (outer):", e)
+            logging.error(f"Error receiving state (outer): {e}")
             return
 
         # Debug print the full state message
@@ -158,16 +171,19 @@ class Game:
             pos = clients_data[self.client_id]
             new_role = pos.get('role', self.local_player.role)
             self.local_player.role = new_role
+            logging.debug(f"Client {self.client_id} role updated to {new_role}")
 
         # Process remote clients.
         for client_id, pos in clients_data.items():
             if client_id != self.client_id:  # Exclude local player
                 if client_id not in self.remote_players:
                     self.remote_players[client_id] = Player(pos['x'], pos['y'], pos.get('role', 'runner'))
+                    logging.info(f"New remote player added: Client ID {client_id}, x={pos['x']}, y={pos['y']}, role={pos.get('role', 'runner')}")
                 else:
                     self.remote_players[client_id].x = pos['x']
                     self.remote_players[client_id].y = pos['y']
                     self.remote_players[client_id].role = pos.get('role', 'runner')
+                    logging.debug(f"Remote player {client_id} updated: x={pos['x']}, y={pos['y']}, role={pos.get('role', 'runner')}")
                     # Optional: print each remote client's role for debugging.
                     
 
@@ -236,6 +252,7 @@ class Game:
         # Update the player position
         player.x = new_x
         player.y = new_y
+        logging.debug(f"Player moved to x={player.x}, y={player.y}")
 
     def check_collision(self, x, y, radius):
         """Helper method to check if a position collides with walls"""
@@ -266,6 +283,7 @@ class Player:
         self.speed = 15
         self.size = 1
         self.role = role
+        logging.info(f"Player created: x={x}, y={y}, role={role}")
     
     def can_move(self, grid, new_x, new_y):
         epsilon = 0.001  # Small value to expand the bounding box
@@ -318,3 +336,4 @@ class Player:
         if self.can_move(grid, new_x, new_y):
             self.x = new_x
             self.y = new_y
+            logging.debug(f"Player moved to x={self.x}, y={self.y} (dt={dt})")
