@@ -88,7 +88,7 @@ def check_tagging(game):
         with clients_lock:
             for cid, pl, _ in clients:
                 if pl.role == "runner" and abs(tagger.x - pl.x) < 0.5 and abs(tagger.y - pl.y) < 0.5:
-                    pl.role = "tagged"
+                    pl.role = "tagger"
         # Check the server's local player.
         if game.local_player.role == "runner" and abs(tagger.x - game.local_player.x) < 0.5 and abs(tagger.y - game.local_player.y) < 0.5:
             game.local_player.role = "tagged"
@@ -166,8 +166,8 @@ def main():
     try:
         while running:
             running = game.display_map()  # This handles movement, rendering, and events.
-            server_player.x = game.local_player.x
-            server_player.y = game.local_player.y
+            server_player.x = 0.0
+            server_player.y = 0.0
             server_player.role = game.local_player.role
             broadcast_state(game, server_player)
             check_tagging(game)
