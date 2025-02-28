@@ -14,7 +14,7 @@ def carve_room(grid, x, y, width, height):
 
 def carve_hallway(grid, x1, y1, x2, y2, hallway_cells, connect_prob=0.5):
     hallway_width = 3  # Adjust width of hallways
-
+ 
     if random.choice([True, True, False]):
         for x in range(min(x1, x2), max(x1, x2) + 1):
             for i in range(hallway_width):

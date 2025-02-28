@@ -2,6 +2,7 @@ import pygame
 import random
 import json
 import logging
+from powerup import Powerup
 from map import generate_map
 
 logging.basicConfig(
@@ -24,6 +25,8 @@ class Game:
         self.local_player = Player(*self.get_spawn_position())
         self.remote_players = {}
         self.client_id = None
+        self.powerup_positions = []
+        self.powerup = Powerup()
         logging.info(f"Game initialized with map size: {map_size}")
     
     def get_spawn_position(self):
@@ -60,6 +63,15 @@ class Game:
         
         # Local player color: green if tagger, red if runner or tagged.
         local_color = (0, 255, 0) if self.local_player.role == "tagger" else (255, 0, 0)
+        local_color = (0, 0, 0)
+        if self.local_player.role == "tagger":
+            local_color = (0, 255, 0)
+        elif self.local_player.ghost:
+            local_color = (128, 0, 128, 50)
+        elif self.local_player.ghost and self.local_player.role == "tagger":
+            local_color = (32, 0, 32, 50)
+        else:
+            local_color = (0, 0, 255)
         pygame.draw.rect(
             self.screen,
             local_color,
@@ -70,15 +82,15 @@ class Game:
                 self.cell_size
             )
         )
-        # If local player has been tagged, render "OUT" text.
-        if self.local_player.role == "tagged":
-            text = self.font.render("OUT", True, (255, 255, 0))
-            self.screen.blit(text, (int(self.local_player.x * self.cell_size), int(self.local_player.y * self.cell_size)))
         
         # Draw remote players.
-        for client_id, player in self.remote_players.items():
+        for _, player in self.remote_players.items():
             if player.role == "tagger":
                 pcolor = (0, 255, 0)  # Tagger is green
+            elif player.ghost == True: # runner ghost is purple
+                pcolor = (128, 0, 128, 50)
+            elif player.ghost and player.role == "tagger": # tagger ghost super dark purple
+                pcolor = (32, 0, 32, 50)
             else:
                 pcolor = (0, 0, 255)  # Runner is blue
             pygame.draw.rect(
@@ -91,12 +103,19 @@ class Game:
                     self.cell_size
                 )
             )
-
-            if player.role == "tagged":
-                text = self.font.render("OUT", True, (255, 255, 0))
-                self.screen.blit(text, (int(player.x * self.cell_size), int(player.y * self.cell_size)))
         
-            
+        for _, powerup in self.powerup_positions:
+            pygame.draw.rect(
+                self.screen,
+                self.powerup.draw_powerup(powerup[0]),
+                (
+                    round(powerup[1][0] * self.cell_size),
+                    round(powerup[1][1] * self.cell_size),
+                    self.cell_size - self.cell_size/3,
+                    self.cell_size - self.cell_size/3
+                )
+            )
+
         pygame.display.flip()
 
         for event in pygame.event.get():
@@ -137,7 +156,9 @@ class Game:
             'type': 'pos',
             'data': {
                 'x': self.local_player.x, 
-                'y': self.local_player.y
+                'y': self.local_player.y,
+                'ghost': self.local_player.ghost,
+                'shield': self.local_player.shield
             }
         }
         msg = json.dumps(data) + '\n'
@@ -170,6 +191,7 @@ class Game:
             pos = clients_data[self.client_id]
             new_role = pos.get('role', self.local_player.role)
             self.local_player.role = new_role
+            self.powerup_positions = pos["powerup_positions"]
             logging.debug(f"Client {self.client_id} role updated to {new_role}")
 
         # Process remote clients.
@@ -182,8 +204,11 @@ class Game:
                     self.remote_players[client_id].x = pos['x']
                     self.remote_players[client_id].y = pos['y']
                     self.remote_players[client_id].role = pos.get('role', 'runner')
+                    self.remote_players[client_id].ghost = pos["ghost"]
+                    self.remote_players[client_id].shield = pos["shield"]
                     logging.debug(f"Remote player {client_id} updated: x={pos['x']}, y={pos['y']}, role={pos.get('role', 'runner')}")
                     # Optional: print each remote client's role for debugging.
+        
                     
 class Player:
     def __init__(self, x, y, role="runner"):
@@ -192,6 +217,9 @@ class Player:
         self.speed = 15
         self.size = 0.5
         self.role = role
+        self.ghost = False
+        self.shield = True
+        self.collision = True
         logging.info(f"Player created: x={x}, y={y}, role={role}")
     
     def can_move(self, grid, new_x, new_y):
@@ -202,9 +230,15 @@ class Player:
         bottom = int(new_y + self.size)
 
         if left < 0 or top < 0 or right >= len(grid[0]) or bottom >= len(grid):
-            return False
+            if self.collision:
+                return False
+            else:
+                return True
         if grid[top][left] == 1 or grid[top][right] == 1 or grid[bottom][left] == 1 or grid[bottom][right] == 1:
-            return False
+            if self.collision:
+                return False
+            else:
+                return True
         return True
     
     def handle_movement(self, grid, dt):

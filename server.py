@@ -4,11 +4,12 @@ import threading
 import random
 import pygame
 from game import Game, Player
-from map import generate_map  # noqa: F401
+from powerup import Powerup
+
 
 clients = []
 clients_lock = threading.Lock()
-shutdown_event = threading.Event()  # Add this line
+shutdown_event = threading.Event()
 
 def is_valid_spawn(game_map, x, y):
     """Checks if the given coordinates are a valid spawn position (black cell)."""
@@ -45,7 +46,7 @@ def handle_client(conn, client_id, client_player):
                     clients.pop(i)
                     break
 
-def broadcast_state(game, server_player):
+def broadcast_state(game, server_player, powerups):
     with clients_lock:
         state = {
             "type": "state",
@@ -61,9 +62,12 @@ def broadcast_state(game, server_player):
                         "id": str(cid),
                         "x": pl.x - 0.4,
                         "y": pl.y - 0.4,
-                        "role": pl.role
+                        "role": pl.role,
+                        "ghost": pl.ghost,
+                        "shield": pl.shield
                     } for cid, pl, _ in clients
-                }
+                },
+                "powerups": powerups.powerup_positions
             }
         }
         msg = (json.dumps(state) + "\n").encode()
@@ -88,17 +92,17 @@ def check_tagging(game):
         with clients_lock:
             for cid, pl, _ in clients:
                 if pl.role == "runner" and abs(tagger.x - pl.x) < 0.5 and abs(tagger.y - pl.y) < 0.5:
-                    pl.role = "tagger"
-        # Check the server's local player.
-        if game.local_player.role == "runner" and abs(tagger.x - game.local_player.x) < 0.5 and abs(tagger.y - game.local_player.y) < 0.5:
-            game.local_player.role = "tagged"
+                    if pl.shield:
+                        return
+                    else:
+                        pl.role = "tagger"
 
 def accept_clients(server_socket, game, used_spawns):
     """Continuously accepts new clients and assigns them a spawn."""
     client_id_counter = 1
     tagger_assigned = False  # Flag to ensure only one tagger
 
-    while not shutdown_event.is_set(): # Add this line
+    while not shutdown_event.is_set():
         try:
             conn, addr = server_socket.accept()
             print(f"Client {client_id_counter} connected: {addr}")
@@ -120,7 +124,6 @@ def accept_clients(server_socket, game, used_spawns):
                 conn.close()
                 continue
 
-            # Find a valid spawn position.
             # Find a valid spawn position.
             while True:
                 x = random.randint(0, len(game.game_map[0]) - 1)
@@ -155,6 +158,9 @@ def main():
     game = Game()
     used_spawns = set()
 
+    powerups = Powerup()
+    powerups.spawn_powerups()
+
     # Start accepting clients in a separate thread.
     accept_thread = threading.Thread(target=accept_clients, args=(server_socket, game, used_spawns), daemon=True)
     accept_thread.start()
@@ -169,7 +175,12 @@ def main():
             server_player.x = 0.0
             server_player.y = 0.0
             server_player.role = game.local_player.role
-            broadcast_state(game, server_player)
+
+            with clients_lock:
+                for cid, pl in clients:
+                    powerups.check_powerup_collisions(pl)
+
+            broadcast_state(game, server_player, powerups)
             check_tagging(game)
     finally:
         shutdown_event.set()  # Signal shutdown to all threads
