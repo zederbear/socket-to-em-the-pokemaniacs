@@ -177,7 +177,7 @@ def main():
             server_player.role = game.local_player.role
 
             with clients_lock:
-                for cid, pl in clients:
+                for cid, pl, _ in clients:
                     powerups.check_powerup_collisions(pl)
 
             broadcast_state(game, server_player, powerups)
