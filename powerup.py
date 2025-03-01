@@ -82,13 +82,13 @@ class Powerup:
                 self.apply_powerup_effect(powerup['type'], player)
                 self.powerup_positions.remove(powerup)
 
-    def apply_powerup_effect(self, powerup_type):
+    def apply_powerup_effect(self, powerup_type, player):
         duration = 10  # Duration for the powerup effect
         if powerup_type == 'speed':
-            self.apply_speed(duration)
+            self.apply_speed(duration, player)
         elif powerup_type == 'ghost':
-            self.apply_ghost(duration)
+            self.apply_ghost(duration, player)
         elif powerup_type == 'shield':
-            self.apply_shield(duration)
+            self.apply_shield(duration, player)
 
     
