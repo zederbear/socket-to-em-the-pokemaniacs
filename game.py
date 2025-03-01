@@ -228,7 +228,7 @@ class Player:
         self.size = 0.5
         self.role = role
         self.ghost = False
-        self.shield = True
+        self.shield = False
         self.collision = True
         logging.info(f"Player created: x={x}, y={y}, role={role}")
     
