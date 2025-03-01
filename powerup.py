@@ -77,7 +77,7 @@ class Powerup:
             powerup_pos = powerup['position']
             distance = ((player_pos[0] - powerup_pos[0]) ** 2 + (player_pos[1] - powerup_pos[1]) ** 2) ** 0.5
             if distance < player_radius:
-                self.apply_powerup_effect(powerup['type'])
+                self.apply_powerup_effect(powerup['type'], player)
                 self.powerup_positions.remove(powerup)
 
     def apply_powerup_effect(self, powerup_type):
