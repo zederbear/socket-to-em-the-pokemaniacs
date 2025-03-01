@@ -107,10 +107,10 @@ class Game:
         for _, powerup in self.powerup_positions:
             pygame.draw.rect(
                 self.screen,
-                self.powerup.draw_powerup(powerup[0]),
+                self.powerup.draw_powerup(powerup["type"]),
                 (
-                    round(float(powerup[1][0]) * self.cell_size),
-                    round(float(powerup[1][1]) * self.cell_size),
+                    round(float(powerup["position"][0]) * self.cell_size),
+                    round(float(powerup["position"][1]) * self.cell_size),
                     self.cell_size - self.cell_size/3,
                     self.cell_size - self.cell_size/3
                 )
