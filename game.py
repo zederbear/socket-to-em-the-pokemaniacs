@@ -68,10 +68,12 @@ class Game:
             local_color = (128, 0, 128, 50)
         elif self.local_player.ghost and self.local_player.role == "tagger":
             local_color = (32, 0, 32, 50)
+        elif self.local_player.shield:
+            local_color = (255, 255, 0)    
         elif self.local_player.role == "tagger":
             local_color = (0, 255, 0)
         else:
-            local_color = (0, 0, 255)
+            local_color = (255, 0, 0)
         pygame.draw.rect(
             self.screen,
             local_color,
