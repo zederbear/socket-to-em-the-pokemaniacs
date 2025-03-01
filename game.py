@@ -64,12 +64,12 @@ class Game:
         # Local player color: green if tagger, red if runner or tagged.
         local_color = (0, 255, 0) if self.local_player.role == "tagger" else (255, 0, 0)
         local_color = (0, 0, 0)
-        if self.local_player.role == "tagger":
-            local_color = (0, 255, 0)
-        elif self.local_player.ghost:
+        if self.local_player.ghost:
             local_color = (128, 0, 128, 50)
         elif self.local_player.ghost and self.local_player.role == "tagger":
             local_color = (32, 0, 32, 50)
+        elif self.local_player.role == "tagger":
+            local_color = (0, 255, 0)
         else:
             local_color = (0, 0, 255)
         pygame.draw.rect(
@@ -85,12 +85,12 @@ class Game:
         
         # Draw remote players.
         for _, player in self.remote_players.items():
-            if player.role == "tagger":
-                pcolor = (0, 255, 0)  # Tagger is green
-            elif player.ghost == True: # runner ghost is purple
+            if player.ghost == True: # runner ghost is purple
                 pcolor = (128, 0, 128, 50)
             elif player.ghost and player.role == "tagger": # tagger ghost super dark purple
                 pcolor = (32, 0, 32, 50)
+            elif player.role == "tagger":
+                pcolor = (0, 255, 0)  # Tagger is green
             else:
                 pcolor = (0, 0, 255)  # Runner is blue
             pygame.draw.rect(
@@ -191,6 +191,13 @@ class Game:
             pos = clients_data[self.client_id]
             new_role = pos.get('role', self.local_player.role)
             self.local_player.role = new_role
+            self.local_player.ghost = pos.get('ghost', self.local_player.ghost)
+            if self.local_player.ghost:
+                self.local_player.collision = False
+            else:
+                self.local_player.collision = True
+            self.local_player.speed = pos.get('speed', self.local_player.speed)
+            self.local_player.shield = pos.get('shield', self.local_player.shield)
             logging.debug(f"Client {self.client_id} role updated to {new_role}")
 
         logging.debug(state_data.get('data', {}).get('powerups', []))

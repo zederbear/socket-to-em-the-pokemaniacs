@@ -10,6 +10,34 @@ from powerup import Powerup
 clients = []
 clients_lock = threading.Lock()
 shutdown_event = threading.Event()
+powerup_timers = {}
+powerup_lock = threading.Lock()
+
+def update_powerup_timers():
+    with powerup_lock:
+        for client_id in list(powerup_timers.keys()):
+            for effect in list(powerup_timers[client_id].keys()):
+                if powerup_timers[client_id][effect] is not None:
+                    powerup_timers[client_id][effect] -= 1
+                    print(f"Timer for client {client_id}, effect {effect}: {powerup_timers[client_id][effect]}")
+                    if powerup_timers[client_id][effect] <= 0:
+                        print(f"Removing {effect} effect from client {client_id}")
+                        with clients_lock:
+                            for cid, pl, _ in clients:
+                                if str(cid) == client_id:
+                                    if effect == "speed":
+                                        pl.speed /= 1.5
+                                        print(f"Speed reset for player {cid}")
+                                    elif effect == "ghost":
+                                        pl.ghost = False
+                                        pl.collision = True
+                                        print(f"Ghost reset for player {cid}")
+                                    elif effect == "shield":
+                                        pl.shield = False
+                                        print(f"Shield reset for player {cid}")
+                        del powerup_timers[client_id][effect]
+            if not powerup_timers[client_id]:
+                del powerup_timers[client_id]
 
 def is_valid_spawn(game_map, x, y):
     """Checks if the given coordinates are a valid spawn position (black cell)."""
@@ -64,7 +92,8 @@ def broadcast_state(game, server_player, powerups):
                         "y": pl.y - 0.4,
                         "role": pl.role,
                         "ghost": pl.ghost,
-                        "shield": pl.shield
+                        "shield": pl.shield,
+                        "speed": pl.speed
                     } for cid, pl, _ in clients
                 },
                 "powerups": powerups.powerup_positions
@@ -178,7 +207,22 @@ def main():
 
             with clients_lock:
                 for cid, pl, _ in clients:
-                    powerups.check_powerup_collisions(pl)
+                    for powerup in powerups.powerup_positions[:]:
+                        powerup_pos = powerup['position']
+                        distance = ((pl.x - powerup_pos[0]) ** 2 + (pl.y - powerup_pos[1]) ** 2) ** 0.5
+                        if distance < 1:  # Player radius
+                            print(f"Player {cid} collected {powerup['type']} powerup")
+                            duration = powerups.apply_powerup_effect(powerup['type'], pl)
+                            client_id = str(cid)
+                            with powerup_lock:
+                                if client_id not in powerup_timers:
+                                    powerup_timers[client_id] = {}
+                                powerup_timers[client_id][powerup['type']] = duration
+                                print(f"Set timer for client {client_id}, effect {powerup['type']}: {duration}")
+                            powerups.powerup_positions.remove(powerup)
+
+# Add timer update before broadcast_state
+            update_powerup_timers()
 
             broadcast_state(game, server_player, powerups)
             check_tagging(game)
