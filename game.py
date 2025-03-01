@@ -193,8 +193,10 @@ class Game:
             self.local_player.role = new_role
             logging.debug(f"Client {self.client_id} role updated to {new_role}")
 
+        logging.debug(state_data.get('data', {}).get('powerups', []))
+        logging.debug(f"Type: {type(state_data.get('data', {}).get('powerups', []))}")
         self.powerup_positions = state_data.get('data', {}).get('powerups', [])
-
+        
         # Process remote clients.
         for client_id, pos in clients_data.items():
             if client_id != self.client_id:  # Exclude local player
