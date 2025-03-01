@@ -65,7 +65,7 @@ class Powerup:
                 time.sleep(15)  # Wait for 30 seconds
                 powerup_type = random.choice(['speed', 'ghost', 'shield'])
                 duration = 10  # Duration for the powerup effect
-                position = (random.randint(0, 100), random.randint(0, 100))  # Random position
+                position = (random.randint(1, 50), random.randint(1, 50))  # Random position
                 self.powerup_positions.append({'type': powerup_type, 'position': position})
                 print(f"Spawning {powerup_type} powerup at {position} for {duration} seconds")
         threading.Thread(target=powerup_thread).start()
