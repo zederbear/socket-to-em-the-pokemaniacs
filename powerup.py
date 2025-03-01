@@ -43,7 +43,7 @@ class Powerup:
     def spawn_powerups(self):
         def powerup_thread():
             while self.running:
-                time.sleep(5)  
+                time.sleep(15)  
                 powerup_type = random.choice(['speed', 'ghost', 'shield'])
                 duration = 10  # Duration for the powerup effect
                 position = (random.randint(1, 50), random.randint(1, 50))  # Random position
@@ -64,7 +64,7 @@ class Powerup:
                 self.powerup_positions.remove(powerup)
 
     def apply_powerup_effect(self, powerup_type, player):
-        duration = 1000  # Fixed duration for all powerups
+        duration = 100  # Fixed duration for all powerups
         if powerup_type == 'speed':
             return self.apply_speed(duration, player)
         elif powerup_type == 'ghost':
