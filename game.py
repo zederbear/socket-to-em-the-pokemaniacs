@@ -191,7 +191,7 @@ class Game:
             pos = clients_data[self.client_id]
             new_role = pos.get('role', self.local_player.role)
             self.local_player.role = new_role
-            self.powerup_positions = pos["powerup_positions"]
+            self.powerup_positions = pos["powerups"]
             logging.debug(f"Client {self.client_id} role updated to {new_role}")
 
         # Process remote clients.

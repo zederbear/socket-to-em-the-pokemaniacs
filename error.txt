@@ -1,0 +1,18 @@
+PS C:\Users\magic\socket-to-em-the-pokemaniacs> python3 .\client.py
+pygame 2.6.1 (SDL 2.28.4, Python 3.12.9)
+Hello from the pygame community. https://www.pygame.org/contribute.html
+Enter server IP: 192.168.0.48
+Enter port: 1234
+Connected to server!
+Received client ID: 1
+Traceback (most recent call last):
+  File "C:\Users\magic\socket-to-em-the-pokemaniacs\client.py", line 66, in <module>
+    main()
+  File "C:\Users\magic\socket-to-em-the-pokemaniacs\client.py", line 57, in main
+    game.receive_state(client)  # Now receives complete messages
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\magic\socket-to-em-the-pokemaniacs\game.py", line 194, in receive_state
+    self.powerup_positions = pos["powerup_positions"]
+                             ~~~^^^^^^^^^^^^^^^^^^^^^
+KeyError: 'powerup_positions'
+PS C:\Users\magic\socket-to-em-the-pokemaniacs>
