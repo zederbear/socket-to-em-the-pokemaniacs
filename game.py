@@ -104,7 +104,7 @@ class Game:
                 )
             )
         
-        for _, powerup in self.powerup_positions:
+        for powerup in self.powerup_positions:
             pygame.draw.rect(
                 self.screen,
                 self.powerup.draw_powerup(powerup["type"]),
