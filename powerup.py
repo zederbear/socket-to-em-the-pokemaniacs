@@ -3,6 +3,7 @@ import threading
 import random
 
 
+
 class Powerup:
     def __init__(self):
         self.running = True
@@ -88,22 +89,13 @@ class Powerup:
                 self.powerup_positions.remove(powerup)
 
     def apply_powerup_effect(self, powerup_type, player):
-        """
-        Applies the appropriate powerup effect to a player
-        Args:
-            powerup_type: String identifying the powerup ('speed', 'ghost', or 'shield')
-            player: Player object to apply the powerup to
-        Returns:
-            duration: Length of the powerup effect
-        """
-        duration = 500  # Fixed duration for all powerups
-        
-        # Apply the appropriate effect based on powerup type
+        duration = 500  # Fixed duration for all powerups. The unit is updates sooo... its a random amount of time based on power of cpu....
         if powerup_type == 'speed':
             return self.apply_speed(duration, player)
         elif powerup_type == 'ghost':
             return self.apply_ghost(duration, player)
         elif powerup_type == 'shield':
             return self.apply_shield(duration, player)
-        return duration  # Return default duration if powerup type not recognized
+        return duration
+
 
