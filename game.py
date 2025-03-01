@@ -166,8 +166,16 @@ class Game:
         logging.debug(f"Player data sent: x={self.local_player.x}, y={self.local_player.y}")
     
     def receive_state(self, conn):
+        """
+        Receives and processes game state updates from the server.
+        Handles player positions, roles, and powerup states.
+        
+        Args:
+            conn: Socket connection to the server
+        """
         buffer = ""
         try:
+            # Accumulate incoming data until we have a complete message
             while "\n" not in buffer:
                 part = conn.recv(1024).decode('utf-8')
                 if not part:
@@ -183,42 +191,46 @@ class Game:
             logging.error(f"Error receiving state (outer): {e}")
             return
 
-        # Debug print the full state message
-
-        # Update the local player's role even if it hasn't changed.
+        # Update local player state from server data
         clients_data = state_data.get('data', {}).get('clients', {})
         if self.client_id in clients_data:
             pos = clients_data[self.client_id]
+            # Update player role and attributes
             new_role = pos.get('role', self.local_player.role)
             self.local_player.role = new_role
             self.local_player.ghost = pos.get('ghost', self.local_player.ghost)
+            
+            # Update collision state based on ghost mode
             if self.local_player.ghost:
                 self.local_player.collision = False
             else:
                 self.local_player.collision = True
+                
+            # Update speed and shield status
             self.local_player.speed = pos.get('speed', self.local_player.speed)
             self.local_player.shield = pos.get('shield', self.local_player.shield)
             logging.debug(f"Client {self.client_id} role updated to {new_role}")
 
+        # Debug logging for powerup state
         logging.debug(state_data.get('data', {}).get('powerups', []))
         logging.debug(f"Type: {type(state_data.get('data', {}).get('powerups', []))}")
         self.powerup_positions = state_data.get('data', {}).get('powerups', [])
         
-        # Process remote clients.
+        # Update remote players' states
         for client_id, pos in clients_data.items():
-            if client_id != self.client_id:  # Exclude local player
+            if client_id != self.client_id:  # Skip local player
                 if client_id not in self.remote_players:
+                    # Create new remote player if not exists
                     self.remote_players[client_id] = Player(pos['x'], pos['y'], pos.get('role', 'runner'))
                     logging.info(f"New remote player added: Client ID {client_id}, x={pos['x']}, y={pos['y']}, role={pos.get('role', 'runner')}")
                 else:
+                    # Update existing remote player state
                     self.remote_players[client_id].x = pos['x']
                     self.remote_players[client_id].y = pos['y']
                     self.remote_players[client_id].role = pos.get('role', 'runner')
                     self.remote_players[client_id].ghost = pos["ghost"]
                     self.remote_players[client_id].shield = pos["shield"]
                     logging.debug(f"Remote player {client_id} updated: x={pos['x']}, y={pos['y']}, role={pos.get('role', 'runner')}")
-                    # Optional: print each remote client's role for debugging.
-        
                     
 class Player:
     def __init__(self, x, y, role="runner"):

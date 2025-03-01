@@ -25,18 +25,42 @@ class Powerup:
         return color
 
     def apply_speed(self, duration, player):
-        player.speed *= 1.5
+        """
+        Increases player's speed by 50%
+        Args:
+            duration: How long the speed boost lasts
+            player: Player object to apply speed boost to
+        Returns:
+            duration: Length of speed boost effect
+        """
+        player.speed *= 1.5  # Increase speed by 50%
         print(f"Speed applied to player. New speed: {player.speed}")
         return duration
 
     def apply_ghost(self, duration, player):
-        player.ghost = True 
-        player.collision = False
+        """
+        Makes player ghostly (can pass through walls)
+        Args:
+            duration: How long ghost mode lasts
+            player: Player object to make ghostly
+        Returns:
+            duration: Length of ghost effect
+        """
+        player.ghost = True  # Enable ghost mode
+        player.collision = False  # Disable collision detection
         print(f"Ghost applied to player. Ghost: {player.ghost}, Collision: {player.collision}")
         return duration
 
     def apply_shield(self, duration, player):
-        player.shield = True
+        """
+        Gives player a shield that protects from being tagged
+        Args:
+            duration: How long shield lasts
+            player: Player object to give shield to
+        Returns:
+            duration: Length of shield effect
+        """
+        player.shield = True  # Enable shield
         print(f"Shield applied to player. Shield: {player.shield}")
         return duration
 
@@ -64,12 +88,22 @@ class Powerup:
                 self.powerup_positions.remove(powerup)
 
     def apply_powerup_effect(self, powerup_type, player):
+        """
+        Applies the appropriate powerup effect to a player
+        Args:
+            powerup_type: String identifying the powerup ('speed', 'ghost', or 'shield')
+            player: Player object to apply the powerup to
+        Returns:
+            duration: Length of the powerup effect
+        """
         duration = 500  # Fixed duration for all powerups
+        
+        # Apply the appropriate effect based on powerup type
         if powerup_type == 'speed':
             return self.apply_speed(duration, player)
         elif powerup_type == 'ghost':
             return self.apply_ghost(duration, player)
         elif powerup_type == 'shield':
             return self.apply_shield(duration, player)
-        return duration
+        return duration  # Return default duration if powerup type not recognized
 

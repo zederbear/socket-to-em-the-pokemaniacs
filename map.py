@@ -2,26 +2,50 @@ import random
 import pygame
 
 def create_empty_map(size):
+    """Creates a square grid filled with walls (1's)"""
     return [[1 for _ in range(size)] for _ in range(size)]
 
 def carve_room(grid, x, y, width, height):
+    """Carves out a rectangular room by setting cells to 0 (empty space)
+    
+    Args:
+        grid: 2D list representing the map
+        x, y: Top-left coordinates of the room
+        width, height: Dimensions of the room
+    """
+    # Carve main room area
     for i in range(y, y + height):
         for j in range(x, x + width):
             grid[i][j] = 0
+            
+    # Create central spawn area (5x5 room at center)
     for i in range(-2, 3):
         for j in range(-2, 3):
             grid[25 + i][25 + j] = 0
 
 def carve_hallway(grid, x1, y1, x2, y2, hallway_cells, connect_prob=0.5):
+    """Creates hallways between rooms with specified width
+    
+    Args:
+        grid: 2D list representing the map
+        x1, y1: Starting coordinates
+        x2, y2: Ending coordinates
+        hallway_cells: Set tracking existing hallway positions
+        connect_prob: Probability of connecting to existing hallways
+    """
     hallway_width = 3  # Adjust width of hallways
  
-    if random.choice([True, True, False]):
+    # Randomly choose between horizontal-then-vertical or vertical-then-horizontal
+    if random.choice([True, True, False]):  # 2/3 chance for horizontal-first
+        # Carve horizontal hallway
         for x in range(min(x1, x2), max(x1, x2) + 1):
             for i in range(hallway_width):
                 if y1 + i < len(grid):
+                    # Check if cell should connect to existing hallway
                     if (x, y1 + i) not in hallway_cells or random.random() < connect_prob:
                         grid[y1 + i][x] = 0
                         hallway_cells.add((x, y1 + i))
+        # Carve vertical hallway
         for y in range(min(y1, y2), max(y1, y2) + 1):
             for i in range(hallway_width):
                 if x2 + i < len(grid[0]):
@@ -29,6 +53,7 @@ def carve_hallway(grid, x1, y1, x2, y2, hallway_cells, connect_prob=0.5):
                         grid[y][x2 + i] = 0
                         hallway_cells.add((x2 + i, y))
     else:
+        # Carve vertical hallway first
         for y in range(min(y1, y2), max(y1, y2) + 1):
             for i in range(hallway_width):
                 if x1 + i < len(grid[0]):
@@ -41,7 +66,6 @@ def carve_hallway(grid, x1, y1, x2, y2, hallway_cells, connect_prob=0.5):
                     if (x, y2 + i) not in hallway_cells or random.random() < connect_prob:
                         grid[y2 + i][x] = 0
                         hallway_cells.add((x, y2 + i))
-
 
 def generate_map(size):
     grid = create_empty_map(size)

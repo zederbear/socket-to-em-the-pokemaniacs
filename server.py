@@ -127,15 +127,23 @@ def check_tagging(game):
                         pl.role = "tagger"
 
 def accept_clients(server_socket, game, used_spawns):
-    """Continuously accepts new clients and assigns them a spawn."""
+    """Continuously accepts new clients and assigns them a spawn position.
+    
+    Args:
+        server_socket: The main server socket listening for connections
+        game: The Game instance containing map and game state
+        used_spawns: Set tracking already used spawn positions
+    """
     client_id_counter = 1
-    tagger_assigned = False  # Flag to ensure only one tagger
+    tagger_assigned = False  # Flag to ensure only one tagger is assigned
 
     while not shutdown_event.is_set():
         try:
+            # Accept new client connection
             conn, addr = server_socket.accept()
             print(f"Client {client_id_counter} connected: {addr}")
-            # Send the map so the client can initialize its game state.
+
+            # Send initial game map to client
             map_msg = json.dumps({"type": "map", "data": game.game_map}) + "\n"
             try:
                 conn.sendall(map_msg.encode())
@@ -144,7 +152,7 @@ def accept_clients(server_socket, game, used_spawns):
                 conn.close()
                 continue
 
-            # Send the client ID
+            # Send unique client ID
             id_msg = json.dumps({"type": "client_id", "data": client_id_counter}) + "\n"
             try:
                 conn.sendall(id_msg.encode())
@@ -153,23 +161,30 @@ def accept_clients(server_socket, game, used_spawns):
                 conn.close()
                 continue
 
-            # Find a valid spawn position.
+            # Assign spawn position and role
             while True:
+                # Generate random spawn coordinates
                 x = random.randint(0, len(game.game_map[0]) - 1)
                 y = random.randint(0, len(game.game_map) - 1)
                 if is_valid_spawn(game.game_map, x, y):
-                    if client_id_counter == 2 and not tagger_assigned:  # Second client is tagger
+                    # Second player becomes tagger
+                    if client_id_counter == 2 and not tagger_assigned:
                         client_player = Player(float(x), float(y), role="tagger")
                         tagger_assigned = True
                     else:
                         client_player = Player(float(x), float(y), role="runner")
                     break
 
-
+            # Add new client to active clients list
             with clients_lock:
                 clients.append((client_id_counter, client_player, conn))
-            threading.Thread(target=handle_client, args=(conn, client_id_counter, client_player), daemon=True).start()
+            
+            # Start client handler thread
+            threading.Thread(target=handle_client, 
+                           args=(conn, client_id_counter, client_player), 
+                           daemon=True).start()
             client_id_counter += 1
+
         except socket.timeout:
             continue # Continue to check the shutdown_event
         except Exception as e:
@@ -177,30 +192,36 @@ def accept_clients(server_socket, game, used_spawns):
             break
 
 def main():
+    # Initialize server socket
     port = int(input("Enter port: "))
     server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     server_socket.bind(('', port))
-    server_socket.listen(5)  # Increase backlog if needed.
-    server_socket.settimeout(1) # Add a timeout so the server doesnt get stuck
+    server_socket.listen(5)  # Allow up to 5 pending connections
+    server_socket.settimeout(1) # 1 second timeout for accept()
     print(f"Server listening on port {port}")
 
+    # Initialize game state
     game = Game()
     used_spawns = set()
-
     powerups = Powerup()
     powerups.spawn_powerups()
 
-    # Start accepting clients in a separate thread.
-    accept_thread = threading.Thread(target=accept_clients, args=(server_socket, game, used_spawns), daemon=True)
+    # Start client acceptance thread
+    accept_thread = threading.Thread(target=accept_clients, 
+                                   args=(server_socket, game, used_spawns), 
+                                   daemon=True)
     accept_thread.start()
 
     server_player = game.local_player
 
-    # Main game loop: process input, update the game, render and broadcast state.
+    # Main game loop
     running = True
     try:
         while running:
-            running = game.display_map()  # This handles movement, rendering, and events.
+            # Update game state
+            running = game.display_map()
+            
+            # Reset server player position
             server_player.x = 0.0
             server_player.y = 0.0
             server_player.role = game.local_player.role
