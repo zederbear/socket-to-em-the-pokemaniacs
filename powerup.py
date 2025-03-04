@@ -9,12 +9,8 @@ class Powerup:
         self.running = True
         self.powerup_positions = []
 
-    
-
     def update(self):
         self.check_powerup_collisions()
-
-    
 
     def draw_powerup(self, powerup_type):
         color = (0, 0, 255)  # Default to blue for speed

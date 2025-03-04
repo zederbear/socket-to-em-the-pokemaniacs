@@ -40,7 +40,6 @@ def main():
         buffer = ""
         buffer = game.receive_map(client, buffer)
 
-
         # Receive client ID
         message, buffer = receive_message(client, buffer)
         if message and message.get("type") == "client_id":

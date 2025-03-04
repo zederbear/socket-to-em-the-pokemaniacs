@@ -294,7 +294,6 @@ class Player:
             if not keys[pygame.K_w] and not keys[pygame.K_s]:
                 new_x += self.speed * dt
 
-
         # Apply movement only if there's no collision
         if self.can_move(grid, new_x, self.y):
             self.x = new_x
